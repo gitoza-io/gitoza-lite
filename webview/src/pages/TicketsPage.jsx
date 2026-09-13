@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, FolderPlus, Plus } from "lucide-react";
+import { Box, ChevronDown, ChevronRight, FilePlus2 } from "lucide-react";
 import ConfirmChangesTwoColumnLayout from "../components/ConfirmChangesTwoColumnLayout";
+import ContextMenu from "../components/ContextMenu";
+import InlineRenameInput from "../components/InlineRenameInput";
 import SimpleEntityEditor from "../components/SimpleEntityEditor";
+import TitleBarAddButton from "../components/TitleBarAddButton";
+import TreeToolbar from "../components/TreeToolbar";
+import SidebarSection from "../components/SidebarSection";
 import {
   createTicket,
   createTicketProject,
@@ -67,12 +72,13 @@ export default function TicketsPage({
   const [projects, setProjects] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [expanded, setExpanded] = useState(() => new Set());
+  const [creatingProject, setCreatingProject] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedPath, setSelectedPath] = useState(null);
   const [detail, setDetail] = useState(null);
   const [editing, setEditing] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [error, setError] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
 
   const reload = useCallback(async () => {
     setError(null);
@@ -108,7 +114,6 @@ export default function TicketsPage({
   useEffect(() => {
     if (!selectedPath) {
       setDetail(null);
-      setEditing(false);
       return;
     }
     let cancelled = false;
@@ -144,45 +149,56 @@ export default function TicketsPage({
     onTicketsRootInitialized?.();
   };
 
-  const handleCreateProject = async () => {
-    const name = window.prompt("Ticket project name");
-    if (!name?.trim()) return;
-    try {
-      await ensureRoot();
-      const result = await createTicketProject(name.trim());
-      const projectName = result.project_path.split("/").pop();
-      setSelectedProject(projectName);
-      setExpanded((prev) => new Set(prev).add(projectName));
-      await reload();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create project");
-    }
-  };
+  const handleCommitInlineProject = useCallback(
+    async (name) => {
+      if (!name?.trim()) {
+        setCreatingProject(false);
+        return;
+      }
+      try {
+        await ensureRoot();
+        const result = await createTicketProject(name.trim());
+        const projectName = result.project_path.split("/").pop();
+        setCreatingProject(false);
+        setSelectedProject(projectName);
+        setSelectedPath(null);
+        setEditing(false);
+        setDetail(null);
+        setExpanded((prev) => new Set(prev).add(projectName));
+        await reload();
+      } catch (e) {
+        setCreatingProject(false);
+        setError(e instanceof Error ? e.message : "Failed to create project");
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ensureRoot uses stable props
+    [reload, onTicketsRootInitialized],
+  );
 
-  const handleCreateTicket = async () => {
-    if (!selectedProject) {
-      setError("Select a project first");
-      return;
-    }
-    setCreating(true);
-    setEditing(true);
-    setSelectedPath(null);
-    setDetail({
-      ticket_id: "(new)",
-      title: "",
-      type: "task",
-      status: "open",
-      priority: "medium",
-      tags: [],
-      assigned_to: "",
-      reporter: "",
-      sprint: "",
-      release: "",
-      body: "",
-      file_path: "",
-      project: selectedProject,
-    });
-  };
+  const handleCreateTicket = useCallback(
+    async (projectName) => {
+      if (!projectName) return;
+      try {
+        await ensureRoot();
+        const created = await createTicket({
+          project: projectName,
+          title: "Untitled",
+          type: "task",
+          status: "open",
+          priority: "medium",
+        });
+        setSelectedProject(projectName);
+        setExpanded((prev) => new Set(prev).add(projectName));
+        await reload();
+        setSelectedPath(created.file_path);
+        setEditing(true);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to create ticket");
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [reload, onTicketsRootInitialized],
+  );
 
   const editorValues = detail
     ? {
@@ -199,6 +215,7 @@ export default function TicketsPage({
     : {};
 
   const handleSave = async ({ values, body }) => {
+    if (!selectedPath) return;
     const payload = {
       title: values.title,
       type: values.type,
@@ -212,20 +229,9 @@ export default function TicketsPage({
       body,
     };
     try {
-      if (creating || !selectedPath) {
-        if (!selectedProject) throw new Error("Select a project first");
-        const created = await createTicket({
-          project: selectedProject,
-          ...payload,
-        });
-        setCreating(false);
-        setSelectedPath(created.file_path);
-        setEditing(false);
-      } else {
-        await updateTicket(selectedPath, payload);
-        setEditing(false);
-        setDetail(await getTicketDetail(selectedPath));
-      }
+      await updateTicket(selectedPath, payload);
+      setEditing(false);
+      setDetail(await getTicketDetail(selectedPath));
       await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
@@ -233,12 +239,13 @@ export default function TicketsPage({
   };
 
   const handleDelete = async () => {
-    if (!selectedPath || creating) return;
+    if (!selectedPath) return;
     if (!window.confirm("Delete this ticket?")) return;
     try {
       await deleteTicket(selectedPath);
       setSelectedPath(null);
       setDetail(null);
+      setEditing(false);
       await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Delete failed");
@@ -256,27 +263,22 @@ export default function TicketsPage({
 
   const listColumn = (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center gap-1 border-b border-slate-200 px-2 py-2 dark:border-slate-800">
-        <h1 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-          Tickets
-        </h1>
-        <button
-          type="button"
-          className="ml-auto rounded p-1 hover:bg-slate-100 dark:hover:bg-slate-800"
-          title="New project"
-          onClick={handleCreateProject}
-        >
-          <FolderPlus className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          className="rounded p-1 hover:bg-slate-100 disabled:opacity-40 dark:hover:bg-slate-800"
-          title="New ticket"
-          onClick={handleCreateTicket}
-          disabled={!selectedProject}
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
+      <div className="shrink-0 border-b border-slate-200 px-2 py-2 dark:border-slate-700">
+        <SidebarSection
+          title="Tickets"
+          toolbar={
+            <TreeToolbar
+              addButton={
+                <TitleBarAddButton
+                  tooltip="Create project"
+                  onClick={() => setCreatingProject(true)}
+                  ariaLabel="Create project"
+                />
+              }
+              searchNode={null}
+            />
+          }
+        />
       </div>
       {error ? (
         <div className="shrink-0 bg-red-50 px-2 py-1 text-[11px] text-red-700 dark:bg-red-950/40 dark:text-red-300">
@@ -284,7 +286,20 @@ export default function TicketsPage({
         </div>
       ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto p-1">
-        {projects.length === 0 ? (
+        {creatingProject ? (
+          <div className="mb-1 flex min-w-0 items-center gap-2 rounded px-2 py-1.5">
+            <Box
+              className="h-4 w-4 shrink-0 text-emerald-500 dark:text-emerald-400"
+              aria-hidden
+            />
+            <InlineRenameInput
+              initialValue=""
+              placeholder="Project name…"
+              onCommit={handleCommitInlineProject}
+            />
+          </div>
+        ) : null}
+        {projects.length === 0 && !creatingProject ? (
           <div className="px-2 py-4 text-center text-xs text-slate-400">
             No ticket projects yet
           </div>
@@ -294,7 +309,7 @@ export default function TicketsPage({
               const isOpen = expanded.has(p.name);
               const projectTickets = ticketsByProject.get(p.name) || [];
               const projectSelected =
-                selectedProject === p.name && !selectedPath && !creating;
+                selectedProject === p.name && !selectedPath;
               return (
                 <li key={p.name}>
                   <div className="flex items-center gap-0.5">
@@ -312,20 +327,33 @@ export default function TicketsPage({
                     </button>
                     <button
                       type="button"
-                      className={`${rowClass(projectSelected)} flex-1`}
+                      className={`${rowClass(projectSelected)} flex flex-1 items-center gap-1.5`}
                       onClick={() => {
                         setSelectedProject(p.name);
                         setSelectedPath(null);
-                        setCreating(false);
                         setEditing(false);
                         setDetail(null);
                         setExpanded((prev) => new Set(prev).add(p.name));
                       }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelectedProject(p.name);
+                        setContextMenu({
+                          x: e.clientX,
+                          y: e.clientY,
+                          projectName: p.name,
+                        });
+                      }}
                     >
-                      <span className="font-medium text-slate-800 dark:text-slate-100">
+                      <Box
+                        className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                        aria-hidden
+                      />
+                      <span className="min-w-0 flex-1 truncate font-medium text-slate-800 dark:text-slate-100">
                         {p.display_name}
                       </span>
-                      <span className="ml-1 text-[10px] text-slate-400">
+                      <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                         {projectTickets.length}
                       </span>
                     </button>
@@ -339,7 +367,6 @@ export default function TicketsPage({
                             className={rowClass(selectedPath === t.file_path)}
                             onClick={() => {
                               setSelectedProject(p.name);
-                              setCreating(false);
                               setEditing(false);
                               setSelectedPath(t.file_path);
                             }}
@@ -367,6 +394,22 @@ export default function TicketsPage({
           </ul>
         )}
       </div>
+      <ContextMenu
+        open={Boolean(contextMenu)}
+        x={contextMenu?.x ?? 0}
+        y={contextMenu?.y ?? 0}
+        onClose={() => setContextMenu(null)}
+        items={[
+          {
+            icon: FilePlus2,
+            label: "Create ticket",
+            onClick: () => {
+              const projectName = contextMenu?.projectName;
+              if (projectName) void handleCreateTicket(projectName);
+            },
+          },
+        ]}
+      />
     </div>
   );
 
@@ -380,29 +423,20 @@ export default function TicketsPage({
           emptyMessage={
             projects.length === 0
               ? "Create a ticket project to get started"
-              : "Select a ticket"
+              : "Select a ticket, or right-click a project to create one"
           }
           idLabel="Ticket"
-          idValue={creating ? "(new)" : detail?.ticket_id}
+          idValue={detail?.ticket_id}
           fields={TICKET_FIELDS}
           values={editorValues}
           body={detail?.body || ""}
-          isEditing={editing || creating}
-          onToggleEdit={() => {
-            if (creating) {
-              setCreating(false);
-              setDetail(null);
-              setEditing(false);
-              return;
-            }
-            setEditing((v) => !v);
-          }}
+          isEditing={editing}
+          onToggleEdit={() => setEditing((v) => !v)}
           onSave={handleSave}
-          onDelete={creating ? undefined : handleDelete}
+          onDelete={handleDelete}
           onClose={() => {
             setSelectedPath(null);
             setDetail(null);
-            setCreating(false);
             setEditing(false);
           }}
         />
