@@ -3,14 +3,13 @@ import { Box, ChevronDown, ChevronRight, FilePlus2 } from "lucide-react";
 import ConfirmChangesTwoColumnLayout from "../components/ConfirmChangesTwoColumnLayout";
 import ContextMenu from "../components/ContextMenu";
 import InlineRenameInput from "../components/InlineRenameInput";
-import SimpleEntityEditor from "../components/SimpleEntityEditor";
+import TicketEditorPanel from "../components/TicketEditorPanel";
 import TitleBarAddButton from "../components/TitleBarAddButton";
 import TreeToolbar from "../components/TreeToolbar";
 import SidebarSection from "../components/SidebarSection";
 import {
   createTicket,
   createTicketProject,
-  deleteTicket,
   getTicketDetail,
   initializeTicketsRoot,
   listTicketProjects,
@@ -18,44 +17,6 @@ import {
   onTicketsUpdated,
   updateTicket,
 } from "../services/api";
-
-const TICKET_STATUSES = [
-  "open",
-  "in_progress",
-  "in_testing",
-  "blocked",
-  "done",
-  "cancelled",
-];
-
-const TICKET_FIELDS = [
-  { key: "title", label: "Title", type: "text" },
-  {
-    key: "type",
-    label: "Type",
-    type: "select",
-    options: ["bug", "story", "task", "spike"],
-  },
-  { key: "status", label: "Status", type: "select", options: TICKET_STATUSES },
-  {
-    key: "priority",
-    label: "Priority",
-    type: "select",
-    options: ["low", "medium", "high"],
-  },
-  { key: "tags", label: "Tags (comma-separated)", type: "text" },
-  { key: "assigned_to", label: "Assignee", type: "text" },
-  { key: "reporter", label: "Reporter", type: "text" },
-  { key: "sprint", label: "Sprint", type: "text" },
-  { key: "release", label: "Release", type: "text" },
-];
-
-function parseTags(str) {
-  return String(str || "")
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
-}
 
 function rowClass(selected) {
   return `w-full rounded px-2 py-1 text-left text-xs ${
@@ -200,56 +161,12 @@ export default function TicketsPage({
     [reload, onTicketsRootInitialized],
   );
 
-  const editorValues = detail
-    ? {
-        title: detail.title || "",
-        type: detail.type || "task",
-        status: detail.status || "open",
-        priority: detail.priority || "medium",
-        tags: (detail.tags || []).join(", "),
-        assigned_to: detail.assigned_to || "",
-        reporter: detail.reporter || "",
-        sprint: detail.sprint || "",
-        release: detail.release || "",
-      }
-    : {};
-
-  const handleSave = async ({ values, body }) => {
+  const handleSave = async (payload) => {
     if (!selectedPath) return;
-    const payload = {
-      title: values.title,
-      type: values.type,
-      status: values.status,
-      priority: values.priority,
-      tags: parseTags(values.tags),
-      assigned_to: values.assigned_to,
-      reporter: values.reporter,
-      sprint: values.sprint,
-      release: values.release,
-      body,
-    };
-    try {
-      await updateTicket(selectedPath, payload);
-      setEditing(false);
-      setDetail(await getTicketDetail(selectedPath));
-      await reload();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Save failed");
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!selectedPath) return;
-    if (!window.confirm("Delete this ticket?")) return;
-    try {
-      await deleteTicket(selectedPath);
-      setSelectedPath(null);
-      setDetail(null);
-      setEditing(false);
-      await reload();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Delete failed");
-    }
+    await updateTicket(selectedPath, payload);
+    setEditing(false);
+    setDetail(await getTicketDetail(selectedPath));
+    await reload();
   };
 
   const toggleProject = (name) => {
@@ -418,27 +335,27 @@ export default function TicketsPage({
       storageKeys={{ sidebarWidth: "tickets.col.sidebarWidth" }}
       sidebarColumn={listColumn}
       detailColumn={
-        <SimpleEntityEditor
-          empty={!detail}
-          emptyMessage={
-            projects.length === 0
-              ? "Create a ticket project to get started"
-              : "Select a ticket, or right-click a project to create one"
-          }
-          idLabel="Ticket"
-          idValue={detail?.ticket_id}
-          fields={TICKET_FIELDS}
-          values={editorValues}
-          body={detail?.body || ""}
+        <TicketEditorPanel
+          ticketDetail={detail}
+          selectedTicketFilePath={selectedPath}
           isEditing={editing}
-          onToggleEdit={() => setEditing((v) => !v)}
+          onToggleEdit={(next) => setEditing(Boolean(next))}
           onSave={handleSave}
-          onDelete={handleDelete}
-          onClose={() => {
+          onClearSelection={() => {
             setSelectedPath(null);
             setDetail(null);
             setEditing(false);
           }}
+          emptyTitle={
+            projects.length === 0
+              ? "Create a ticket project to get started"
+              : "Select a ticket"
+          }
+          emptyDescription={
+            projects.length === 0
+              ? "Use + to create a project"
+              : "or right-click a project to create one"
+          }
         />
       }
     />
