@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Tickets** and **Wiki** use a Desktop-style two-column tree + detail layout (Kanban board removed)
+
+## [0.3.0] - 2026-09-13
+
+### Added
+
+- **Tickets** — YAML tickets under `.gitoza-lite/tasks/tickets/` with metadata + Markdown editor
+- **Releases** — project-scoped release YAML under `{project}/releases/`
+- **Wiki** — nested folders and `W-…` pages under `.gitoza-lite/wiki/`
+
+### Changed
+
+- Extension renamed to **Gitoza Lite** (`gitoza-lite`); publisher remains `gitoza`
+- Command palette entry is **Gitoza: Open**; Activity Bar and editor tab use Gitoza Lite branding
+- README covers Tickets, Wiki, Releases, and Tests
+
 ## [0.2.1] - 2026-07-28
 
 ### Added

@@ -7,6 +7,8 @@ let initPayload = null;
 const initListeners = new Set();
 let casesUpdatedListeners = new Set();
 let runsUpdatedListeners = new Set();
+let ticketsUpdatedListeners = new Set();
+let wikiUpdatedListeners = new Set();
 let themeChangedListeners = new Set();
 
 function applyInitPayload(payload) {
@@ -32,6 +34,16 @@ if (typeof window !== "undefined") {
 
     if (msg.type === "runsUpdated") {
       for (const fn of runsUpdatedListeners) fn();
+      return;
+    }
+
+    if (msg.type === "ticketsUpdated") {
+      for (const fn of ticketsUpdatedListeners) fn();
+      return;
+    }
+
+    if (msg.type === "wikiUpdated") {
+      for (const fn of wikiUpdatedListeners) fn();
       return;
     }
 
@@ -85,6 +97,16 @@ export function onCasesUpdated(listener) {
 export function onRunsUpdated(listener) {
   runsUpdatedListeners.add(listener);
   return () => runsUpdatedListeners.delete(listener);
+}
+
+export function onTicketsUpdated(listener) {
+  ticketsUpdatedListeners.add(listener);
+  return () => ticketsUpdatedListeners.delete(listener);
+}
+
+export function onWikiUpdated(listener) {
+  wikiUpdatedListeners.add(listener);
+  return () => wikiUpdatedListeners.delete(listener);
 }
 
 export function onThemeChanged(listener) {
@@ -147,6 +169,45 @@ export const saveRunResults = (runId, updates) =>
 export const deleteRun = (runId) => request("deleteRun", { runId });
 
 export const initializeRunsRoot = () => request("initializeRunsRoot");
+
+export const initializeTicketsRoot = () => request("initializeTicketsRoot");
+export const listTicketProjects = () => request("listTicketProjects");
+export const createTicketProject = (name) =>
+  request("createTicketProject", { name });
+export const listTickets = (params = {}) => request("listTickets", params);
+export const getTicketDetail = (filePath) =>
+  request("getTicketDetail", { filePath });
+export const createTicket = (payload) => request("createTicket", payload);
+export const updateTicket = (filePath, payload) =>
+  request("updateTicket", { filePath, payload });
+export const deleteTicket = (filePath) =>
+  request("deleteTicket", { filePath });
+export const deleteTicketProject = (projectPath) =>
+  request("deleteTicketProject", { projectPath });
+
+export const listReleases = (params = {}) => request("listReleases", params);
+export const getReleaseDetail = (filePath) =>
+  request("getReleaseDetail", { filePath });
+export const createRelease = (payload) => request("createRelease", payload);
+export const updateRelease = (filePath, payload) =>
+  request("updateRelease", { filePath, payload });
+export const deleteRelease = (filePath) =>
+  request("deleteRelease", { filePath });
+
+export const initializeWikiRoot = () => request("initializeWikiRoot");
+export const getWikiTree = () => request("getWikiTree");
+export const listWikiPages = (params = {}) => request("listWikiPages", params);
+export const getWikiDetail = (filePath) =>
+  request("getWikiDetail", { filePath });
+export const createWikiFolder = (parentPath, name) =>
+  request("createWikiFolder", { parentPath, name });
+export const createWikiPage = (payload) => request("createWikiPage", payload);
+export const updateWikiPage = (filePath, payload) =>
+  request("updateWikiPage", { filePath, payload });
+export const deleteWikiPage = (filePath) =>
+  request("deleteWikiPage", { filePath });
+export const deleteWikiFolder = (folderPath) =>
+  request("deleteWikiFolder", { folderPath });
 
 // Stubs for vendored components that reference desktop-only APIs
 export const listCaseTemplates = async () => ({ items: [] });

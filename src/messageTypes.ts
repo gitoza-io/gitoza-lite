@@ -1,5 +1,7 @@
 export const CASES_ROOT = ".gitoza-lite/test/cases";
 export const RUNS_ROOT = ".gitoza-lite/test/run";
+export const TICKETS_ROOT = ".gitoza-lite/tasks/tickets";
+export const WIKI_ROOT = ".gitoza-lite/wiki";
 
 export type RunCaseResult = "pending" | "passed" | "failed" | "skipped";
 
@@ -121,6 +123,167 @@ export interface UpdateCasePayload {
   params?: Record<string, string>;
 }
 
+/** Tickets */
+export type TicketType = "bug" | "story" | "task" | "spike";
+export type TicketStatus =
+  | "open"
+  | "in_progress"
+  | "in_testing"
+  | "blocked"
+  | "done"
+  | "cancelled";
+
+export interface YamlTicketDetail {
+  ticket_id: string;
+  title?: string;
+  tags: string[];
+  type: TicketType;
+  status: TicketStatus;
+  priority?: string;
+  assigned_to?: string;
+  reporter?: string;
+  sprint?: string;
+  release?: string;
+  params: Record<string, string>;
+  file_path: string;
+  body: string;
+  project?: string;
+}
+
+export interface YamlTicketListItem {
+  ticket_id: string;
+  title?: string;
+  tags: string[];
+  type: TicketType;
+  status: TicketStatus;
+  priority?: string;
+  assigned_to?: string;
+  reporter?: string;
+  sprint?: string;
+  release?: string;
+  file_path: string;
+  project?: string;
+}
+
+export interface YamlTicketListResponse {
+  total: number;
+  items: YamlTicketListItem[];
+}
+
+export interface TicketProjectInfo {
+  name: string;
+  display_name: string;
+  project_path: string;
+  ticket_prefix: string;
+  ticket_count: number;
+}
+
+export interface CreateTicketPayload {
+  project: string;
+  title?: string;
+  type?: TicketType;
+  status?: TicketStatus;
+  priority?: string;
+  tags?: string[];
+  body?: string;
+  assigned_to?: string;
+  reporter?: string;
+  sprint?: string;
+  release?: string;
+  params?: Record<string, string>;
+}
+
+export interface UpdateTicketPayload {
+  title?: string;
+  type?: TicketType;
+  status?: TicketStatus;
+  priority?: string;
+  tags?: string[];
+  body?: string;
+  assigned_to?: string;
+  reporter?: string;
+  sprint?: string;
+  release?: string;
+  params?: Record<string, string>;
+}
+
+/** Releases */
+export type ReleaseStatus = "open" | "shipped" | "cancelled";
+
+export interface YamlReleaseDetail {
+  release_id: string;
+  name: string;
+  status: ReleaseStatus;
+  file_path: string;
+  body: string;
+  project?: string;
+  stem?: string;
+}
+
+export interface YamlReleaseListItem {
+  release_id: string;
+  name: string;
+  status: ReleaseStatus;
+  file_path: string;
+  project?: string;
+  stem?: string;
+}
+
+export interface CreateReleasePayload {
+  project: string;
+  name: string;
+  status?: ReleaseStatus;
+  body?: string;
+}
+
+export interface UpdateReleasePayload {
+  name?: string;
+  status?: ReleaseStatus;
+  body?: string;
+}
+
+/** Wiki */
+export type WikiStatus = "draft" | "published" | "outdated";
+
+export interface YamlWikiDetail {
+  page_id: string;
+  title?: string;
+  tags: string[];
+  status: WikiStatus;
+  file_path: string;
+  body: string;
+  directory?: string;
+}
+
+export interface YamlWikiListItem {
+  page_id: string;
+  title?: string;
+  tags: string[];
+  status: WikiStatus;
+  file_path: string;
+  directory?: string;
+}
+
+export interface YamlWikiListResponse {
+  total: number;
+  items: YamlWikiListItem[];
+}
+
+export interface CreateWikiPagePayload {
+  directory: string;
+  title?: string;
+  tags?: string[];
+  status?: WikiStatus;
+  body?: string;
+}
+
+export interface UpdateWikiPagePayload {
+  title?: string;
+  tags?: string[];
+  status?: WikiStatus;
+  body?: string;
+}
+
 export type WebviewRequestType =
   | "ready"
   | "getRepositoryTree"
@@ -145,7 +308,30 @@ export type WebviewRequestType =
   | "deleteFolder"
   | "deleteProject"
   | "renameFolder"
-  | "findRunsReferencingCases";
+  | "findRunsReferencingCases"
+  | "initializeTicketsRoot"
+  | "listTicketProjects"
+  | "createTicketProject"
+  | "listTickets"
+  | "getTicketDetail"
+  | "createTicket"
+  | "updateTicket"
+  | "deleteTicket"
+  | "deleteTicketProject"
+  | "listReleases"
+  | "getReleaseDetail"
+  | "createRelease"
+  | "updateRelease"
+  | "deleteRelease"
+  | "initializeWikiRoot"
+  | "getWikiTree"
+  | "listWikiPages"
+  | "getWikiDetail"
+  | "createWikiFolder"
+  | "createWikiPage"
+  | "updateWikiPage"
+  | "deleteWikiPage"
+  | "deleteWikiFolder";
 
 export interface WebviewRequest {
   type: WebviewRequestType;
@@ -169,6 +355,10 @@ export interface WebviewInitMessage {
   hasCasesRoot: boolean;
   runsRoot: string | null;
   hasRunsRoot: boolean;
+  ticketsRoot: string | null;
+  hasTicketsRoot: boolean;
+  wikiRoot: string | null;
+  hasWikiRoot: boolean;
 }
 
 export interface CasesUpdatedMessage {
@@ -177,6 +367,14 @@ export interface CasesUpdatedMessage {
 
 export interface RunsUpdatedMessage {
   type: "runsUpdated";
+}
+
+export interface TicketsUpdatedMessage {
+  type: "ticketsUpdated";
+}
+
+export interface WikiUpdatedMessage {
+  type: "wikiUpdated";
 }
 
 export interface ThemeChangedMessage {
@@ -194,5 +392,7 @@ export type HostToWebviewMessage =
   | WebviewResponse
   | CasesUpdatedMessage
   | RunsUpdatedMessage
+  | TicketsUpdatedMessage
+  | WikiUpdatedMessage
   | ThemeChangedMessage
   | ErrorMessage;

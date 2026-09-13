@@ -1,4 +1,4 @@
-import { File, FlaskConical } from "lucide-react";
+import { File, FlaskConical, Library, Rocket, Ticket } from "lucide-react";
 import Tooltip from "./Tooltip";
 
 function navButtonClassName(isActive) {
@@ -12,6 +12,9 @@ function navButtonClassName(isActive) {
 const primaryNavItems = [
   { key: "explorer", label: "Test Repository", icon: File },
   { key: "testrun", label: "Test Run", icon: FlaskConical },
+  { key: "tickets", label: "Tickets", icon: Ticket },
+  { key: "releases", label: "Releases", icon: Rocket },
+  { key: "wiki", label: "Wiki", icon: Library },
 ];
 
 function NavIconButtons({ items, activeView, onChangeView }) {

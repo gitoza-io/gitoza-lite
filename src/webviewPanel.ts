@@ -1,19 +1,40 @@
 import * as vscode from "vscode";
 import type { CaseRepository } from "./caseRepository";
 import type { RunRepository } from "./runRepository";
+import type { TicketRepository } from "./ticketRepository";
+import type { ReleaseRepository } from "./releaseRepository";
+import type { WikiRepository } from "./wikiRepository";
 import type {
+  CreateReleasePayload,
+  CreateTicketPayload,
   CreateTestCasePayload,
+  CreateWikiPagePayload,
   HostToWebviewMessage,
   RunCaseResult,
   UpdateCasePayload,
+  UpdateReleasePayload,
+  UpdateTicketPayload,
+  UpdateWikiPagePayload,
   WebviewRequest,
 } from "./messageTypes";
-import { CASES_ROOT, RUNS_ROOT } from "./messageTypes";
-import { hasCasesRoot, hasRunsRoot, resolveCasesRootUri, resolveRunsRootUri } from "./workspace";
+import { CASES_ROOT, RUNS_ROOT, TICKETS_ROOT, WIKI_ROOT } from "./messageTypes";
+import {
+  hasCasesRoot,
+  hasRunsRoot,
+  hasTicketsRoot,
+  hasWikiRoot,
+  resolveCasesRootUri,
+  resolveRunsRootUri,
+  resolveTicketsRootUri,
+  resolveWikiRootUri,
+} from "./workspace";
 
 async function handleWebviewRequest(
   caseRepo: CaseRepository,
   runRepo: RunRepository,
+  ticketRepo: TicketRepository,
+  releaseRepo: ReleaseRepository,
+  wikiRepo: WikiRepository,
   message: WebviewRequest,
 ): Promise<unknown> {
   switch (message.type) {
@@ -117,8 +138,88 @@ async function handleWebviewRequest(
       );
     case "initializeRunsRoot":
       return { runsRoot: await runRepo.initializeRunsRoot() };
+
+    case "initializeTicketsRoot":
+      return { ticketsRoot: await ticketRepo.initializeTicketsRoot() };
+    case "listTicketProjects":
+      return ticketRepo.listTicketProjects();
+    case "createTicketProject":
+      return ticketRepo.createTicketProject(String(message.payload?.name ?? ""));
+    case "listTickets":
+      return ticketRepo.listTickets(
+        (message.payload ?? {}) as { project?: string; release?: string },
+      );
+    case "getTicketDetail":
+      return ticketRepo.getTicketDetail(String(message.payload?.filePath ?? ""));
+    case "createTicket":
+      return ticketRepo.createTicket(
+        message.payload as unknown as CreateTicketPayload,
+      );
+    case "updateTicket":
+      return ticketRepo.updateTicket(
+        String(message.payload?.filePath ?? ""),
+        (message.payload?.payload ?? {}) as UpdateTicketPayload,
+      );
+    case "deleteTicket":
+      return ticketRepo.deleteTicket(String(message.payload?.filePath ?? ""));
+    case "deleteTicketProject":
+      return ticketRepo.deleteTicketProject(
+        String(message.payload?.projectPath ?? ""),
+      );
+
+    case "listReleases":
+      return releaseRepo.listReleases(
+        (message.payload ?? {}) as { project?: string },
+      );
+    case "getReleaseDetail":
+      return releaseRepo.getReleaseDetail(
+        String(message.payload?.filePath ?? ""),
+      );
+    case "createRelease":
+      return releaseRepo.createRelease(
+        message.payload as unknown as CreateReleasePayload,
+      );
+    case "updateRelease":
+      return releaseRepo.updateRelease(
+        String(message.payload?.filePath ?? ""),
+        (message.payload?.payload ?? {}) as UpdateReleasePayload,
+      );
+    case "deleteRelease":
+      return releaseRepo.deleteRelease(String(message.payload?.filePath ?? ""));
+
+    case "initializeWikiRoot":
+      return { wikiRoot: await wikiRepo.initializeWikiRoot() };
+    case "getWikiTree":
+      return wikiRepo.getWikiTree();
+    case "listWikiPages":
+      return wikiRepo.listWikiPages(
+        (message.payload ?? {}) as { directory?: string },
+      );
+    case "getWikiDetail":
+      return wikiRepo.getWikiDetail(String(message.payload?.filePath ?? ""));
+    case "createWikiFolder":
+      return wikiRepo.createWikiFolder(
+        String(message.payload?.parentPath ?? WIKI_ROOT),
+        String(message.payload?.name ?? ""),
+      );
+    case "createWikiPage":
+      return wikiRepo.createWikiPage(
+        message.payload as unknown as CreateWikiPagePayload,
+      );
+    case "updateWikiPage":
+      return wikiRepo.updateWikiPage(
+        String(message.payload?.filePath ?? ""),
+        (message.payload?.payload ?? {}) as UpdateWikiPagePayload,
+      );
+    case "deleteWikiPage":
+      return wikiRepo.deleteWikiPage(String(message.payload?.filePath ?? ""));
+    case "deleteWikiFolder":
+      return wikiRepo.deleteWikiFolder(
+        String(message.payload?.folderPath ?? ""),
+      );
+
     default:
-      throw new Error(`Unknown request type: ${message.type}`);
+      throw new Error(`Unknown request type: ${(message as WebviewRequest).type}`);
   }
 }
 
@@ -133,17 +234,30 @@ function getWebviewTheme(): "light" | "dark" {
 async function buildInitPayload() {
   const casesResolved = await resolveCasesRootUri();
   const runsResolved = await resolveRunsRootUri();
+  const ticketsResolved = await resolveTicketsRootUri();
+  const wikiResolved = await resolveWikiRootUri();
   const hasCases = await hasCasesRoot();
   const hasRuns = await hasRunsRoot();
+  const hasTickets = await hasTicketsRoot();
+  const hasWiki = await hasWikiRoot();
   const theme = getWebviewTheme();
   return {
     type: "init" as const,
     theme,
     casesRoot: casesResolved?.casesRootRel ?? null,
-    workspaceName: casesResolved?.folder.name ?? runsResolved?.folder.name ?? null,
+    workspaceName:
+      casesResolved?.folder.name ??
+      ticketsResolved?.folder.name ??
+      wikiResolved?.folder.name ??
+      runsResolved?.folder.name ??
+      null,
     hasCasesRoot: hasCases,
     runsRoot: runsResolved?.runsRootRel ?? null,
     hasRunsRoot: hasRuns,
+    ticketsRoot: ticketsResolved?.ticketsRootRel ?? null,
+    hasTicketsRoot: hasTickets,
+    wikiRoot: wikiResolved?.wikiRootRel ?? null,
+    hasWikiRoot: hasWiki,
   };
 }
 
@@ -152,6 +266,8 @@ function getWebviewHtml(
   extensionUri: vscode.Uri,
   title: string,
 ): string {
+  // Bust webview asset cache so rebuilt Tickets/Wiki/Releases UI loads after F5 / reload.
+  const cacheBust = String(Date.now());
   const scriptUri = webview.asWebviewUri(
     vscode.Uri.joinPath(extensionUri, "dist", "webview", "assets", "index.js"),
   );
@@ -173,12 +289,12 @@ function getWebviewHtml(
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
     #root { height: 100%; }
   </style>
-  <link rel="stylesheet" href="${styleUri}">
+  <link rel="stylesheet" href="${styleUri}?v=${cacheBust}">
   <title>${title}</title>
 </head>
 <body class="vscode-host">
   <div id="root"></div>
-  <script nonce="${nonce}" type="module" src="${scriptUri}"></script>
+  <script nonce="${nonce}" type="module" src="${scriptUri}?v=${cacheBust}"></script>
 </body>
 </html>`;
 }
@@ -189,25 +305,36 @@ export class GitozaWebviewPanel {
   private readonly extensionUri: vscode.Uri;
   private readonly caseRepo: CaseRepository;
   private readonly runRepo: RunRepository;
+  private readonly ticketRepo: TicketRepository;
+  private readonly releaseRepo: ReleaseRepository;
+  private readonly wikiRepo: WikiRepository;
   private disposables: vscode.Disposable[] = [];
   private casesWatcher: vscode.FileSystemWatcher | undefined;
   private runsWatcher: vscode.FileSystemWatcher | undefined;
+  private ticketsWatcher: vscode.FileSystemWatcher | undefined;
+  private wikiWatcher: vscode.FileSystemWatcher | undefined;
 
   private constructor(
     panel: vscode.WebviewPanel,
     extensionUri: vscode.Uri,
     caseRepo: CaseRepository,
     runRepo: RunRepository,
+    ticketRepo: TicketRepository,
+    releaseRepo: ReleaseRepository,
+    wikiRepo: WikiRepository,
   ) {
     this.panel = panel;
     this.extensionUri = extensionUri;
     this.caseRepo = caseRepo;
     this.runRepo = runRepo;
+    this.ticketRepo = ticketRepo;
+    this.releaseRepo = releaseRepo;
+    this.wikiRepo = wikiRepo;
 
     this.panel.webview.html = getWebviewHtml(
       this.panel.webview,
       this.extensionUri,
-      "Gitoza Test Repository",
+      "Gitoza Lite",
     );
     this.setupMessageHandler(this.panel.webview);
     this.setupWatcher();
@@ -219,18 +346,21 @@ export class GitozaWebviewPanel {
     extensionUri: vscode.Uri,
     caseRepo: CaseRepository,
     runRepo: RunRepository,
+    ticketRepo: TicketRepository,
+    releaseRepo: ReleaseRepository,
+    wikiRepo: WikiRepository,
   ): void {
     const column = vscode.window.activeTextEditor?.viewColumn;
 
     if (GitozaWebviewPanel.currentPanel) {
       GitozaWebviewPanel.currentPanel.panel.reveal(column);
-      void GitozaWebviewPanel.currentPanel.sendInit();
+      GitozaWebviewPanel.currentPanel.reloadWebview();
       return;
     }
 
     const panel = vscode.window.createWebviewPanel(
-      "gitozaTestRepository",
-      "Gitoza Test Repository",
+      "gitozaLite",
+      "Gitoza Lite",
       column ?? vscode.ViewColumn.One,
       {
         enableScripts: true,
@@ -246,6 +376,9 @@ export class GitozaWebviewPanel {
       extensionUri,
       caseRepo,
       runRepo,
+      ticketRepo,
+      releaseRepo,
+      wikiRepo,
     );
   }
 
@@ -259,6 +392,9 @@ export class GitozaWebviewPanel {
           const data = await handleWebviewRequest(
             this.caseRepo,
             this.runRepo,
+            this.ticketRepo,
+            this.releaseRepo,
+            this.wikiRepo,
             message,
           );
           this.postMessage({
@@ -285,6 +421,15 @@ export class GitozaWebviewPanel {
 
   public async sendInit(): Promise<void> {
     this.postMessage(await buildInitPayload());
+  }
+
+  /** Force HTML + assets reload (picks up new webview builds). */
+  public reloadWebview(): void {
+    this.panel.webview.html = getWebviewHtml(
+      this.panel.webview,
+      this.extensionUri,
+      "Gitoza Lite",
+    );
   }
 
   private setupThemeListener(): void {
@@ -326,6 +471,28 @@ export class GitozaWebviewPanel {
     this.runsWatcher.onDidCreate(notifyRuns, null, this.disposables);
     this.runsWatcher.onDidChange(notifyRuns, null, this.disposables);
     this.runsWatcher.onDidDelete(notifyRuns, null, this.disposables);
+
+    const ticketsPattern = new vscode.RelativePattern(
+      folder,
+      `${TICKETS_ROOT}/**`,
+    );
+    this.ticketsWatcher =
+      vscode.workspace.createFileSystemWatcher(ticketsPattern);
+    const notifyTickets = () => {
+      this.postMessage({ type: "ticketsUpdated" });
+    };
+    this.ticketsWatcher.onDidCreate(notifyTickets, null, this.disposables);
+    this.ticketsWatcher.onDidChange(notifyTickets, null, this.disposables);
+    this.ticketsWatcher.onDidDelete(notifyTickets, null, this.disposables);
+
+    const wikiPattern = new vscode.RelativePattern(folder, `${WIKI_ROOT}/**`);
+    this.wikiWatcher = vscode.workspace.createFileSystemWatcher(wikiPattern);
+    const notifyWiki = () => {
+      this.postMessage({ type: "wikiUpdated" });
+    };
+    this.wikiWatcher.onDidCreate(notifyWiki, null, this.disposables);
+    this.wikiWatcher.onDidChange(notifyWiki, null, this.disposables);
+    this.wikiWatcher.onDidDelete(notifyWiki, null, this.disposables);
   }
 
   private postMessage(message: HostToWebviewMessage): void {
@@ -340,10 +507,20 @@ export class GitozaWebviewPanel {
     this.postMessage({ type: "runsUpdated" });
   }
 
+  public notifyTicketsUpdated(): void {
+    this.postMessage({ type: "ticketsUpdated" });
+  }
+
+  public notifyWikiUpdated(): void {
+    this.postMessage({ type: "wikiUpdated" });
+  }
+
   private dispose(): void {
     GitozaWebviewPanel.currentPanel = undefined;
     this.casesWatcher?.dispose();
     this.runsWatcher?.dispose();
+    this.ticketsWatcher?.dispose();
+    this.wikiWatcher?.dispose();
     this.panel.dispose();
     while (this.disposables.length) {
       this.disposables.pop()?.dispose();

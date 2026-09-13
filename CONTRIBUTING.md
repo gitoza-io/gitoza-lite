@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in Gitoza — YAML Test Case Manager for VS Code.
+Thanks for your interest in **Gitoza Lite** for VS Code.
 
 ## Development setup
 
@@ -22,8 +22,8 @@ npm run test:ext
 
 | Path | Purpose |
 |------|---------|
-| `src/` | Extension host (TypeScript) — YAML I/O, file scan, message bridge |
-| `webview/` | React UI vendored from Gitoza desktop app + VS Code adapter |
+| `src/` | Extension host (TypeScript) — YAML I/O for cases, runs, tickets, releases, wiki; message bridge |
+| `webview/` | React UI (vendored desktop patterns + VS Code adapter) |
 | `dist/` | Built extension and webview bundle |
 
 ## Packaging

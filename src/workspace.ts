@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
-import { CASES_ROOT, RUNS_ROOT } from "./messageTypes";
+import { CASES_ROOT, RUNS_ROOT, TICKETS_ROOT, WIKI_ROOT } from "./messageTypes";
+import { assertUnderRoot } from "./pathAsserts";
 
 export function getWorkspaceFolder(): vscode.WorkspaceFolder | undefined {
   const folders = vscode.workspace.workspaceFolders;
@@ -96,16 +97,7 @@ export function isValidCaseId(caseId: string): boolean {
 }
 
 export function assertUnderCasesRoot(relPath: string): void {
-  const norm = relPath.replace(/\\/g, "/").replace(/\/+$/, "");
-  if (
-    !norm.startsWith(CASES_ROOT + "/") &&
-    norm !== CASES_ROOT
-  ) {
-    throw new Error(`Path must be under ${CASES_ROOT}`);
-  }
-  if (norm.includes("..")) {
-    throw new Error("Invalid path");
-  }
+  assertUnderRoot(relPath, CASES_ROOT);
 }
 
 export async function resolveRunsRootUri(): Promise<{
@@ -152,11 +144,98 @@ export async function hasRunsRoot(): Promise<boolean> {
 }
 
 export function assertUnderRunsRoot(relPath: string): void {
-  const norm = relPath.replace(/\\/g, "/").replace(/\/+$/, "");
-  if (!norm.startsWith(RUNS_ROOT + "/") && norm !== RUNS_ROOT) {
-    throw new Error(`Path must be under ${RUNS_ROOT}`);
+  assertUnderRoot(relPath, RUNS_ROOT);
+}
+
+async function resolveRootUri(
+  rootRel: string,
+): Promise<{
+  folder: vscode.WorkspaceFolder;
+  rootUri: vscode.Uri;
+  rootRel: string;
+} | null> {
+  const folders = vscode.workspace.workspaceFolders;
+  if (!folders?.length) {
+    return null;
   }
-  if (norm.includes("..")) {
-    throw new Error("Invalid path");
+
+  for (const folder of folders) {
+    const rootUri = vscode.Uri.joinPath(folder.uri, rootRel);
+    try {
+      const stat = await vscode.workspace.fs.stat(rootUri);
+      if (stat.type === vscode.FileType.Directory) {
+        return { folder, rootUri, rootRel };
+      }
+    } catch {
+      // not found in this folder
+    }
   }
+
+  const folder = folders[0];
+  return {
+    folder,
+    rootUri: vscode.Uri.joinPath(folder.uri, rootRel),
+    rootRel,
+  };
+}
+
+async function hasRoot(rootRel: string): Promise<boolean> {
+  const resolved = await resolveRootUri(rootRel);
+  if (!resolved) {
+    return false;
+  }
+  try {
+    const stat = await vscode.workspace.fs.stat(resolved.rootUri);
+    return stat.type === vscode.FileType.Directory;
+  } catch {
+    return false;
+  }
+}
+
+export async function resolveTicketsRootUri(): Promise<{
+  folder: vscode.WorkspaceFolder;
+  ticketsRootUri: vscode.Uri;
+  ticketsRootRel: string;
+} | null> {
+  const resolved = await resolveRootUri(TICKETS_ROOT);
+  if (!resolved) {
+    return null;
+  }
+  return {
+    folder: resolved.folder,
+    ticketsRootUri: resolved.rootUri,
+    ticketsRootRel: resolved.rootRel,
+  };
+}
+
+export async function hasTicketsRoot(): Promise<boolean> {
+  return hasRoot(TICKETS_ROOT);
+}
+
+export function assertUnderTicketsRoot(relPath: string): void {
+  assertUnderRoot(relPath, TICKETS_ROOT);
+}
+
+export async function resolveWikiRootUri(): Promise<{
+  folder: vscode.WorkspaceFolder;
+  wikiRootUri: vscode.Uri;
+  wikiRootRel: string;
+} | null> {
+  const resolved = await resolveRootUri(WIKI_ROOT);
+  if (!resolved) {
+    return null;
+  }
+  return {
+    folder: resolved.folder,
+    wikiRootUri: resolved.rootUri,
+    wikiRootRel: resolved.rootRel,
+  };
+}
+
+export async function hasWikiRoot(): Promise<boolean> {
+  return hasRoot(WIKI_ROOT);
+}
+
+export function assertUnderWikiRoot(relPath: string): void {
+  assertUnderRoot(relPath, WIKI_ROOT);
 }

@@ -1,8 +1,8 @@
 {
-  "name": "gitoza-yaml-test-cases",
-  "displayName": "YAML Test Cases & Runs — QA for VS Code",
-  "description": "Manage manual test cases and runs as YAML in your repo. Browse suites, edit cases, execute test runs — AI-friendly plain files for Cursor, Copilot & ChatGPT.",
-  "version": "0.2.1",
+  "name": "gitoza-lite",
+  "displayName": "Gitoza Lite — Tickets, Wiki & Tests",
+  "description": "Local-first tickets, wiki pages, releases, and test cases as YAML in your repo. AI-friendly plain files for Cursor, Copilot & ChatGPT.",
+  "version": "0.3.0",
   "publisher": "gitoza",
   "license": "MIT",
   "icon": "media/128x128.png",
@@ -14,24 +14,25 @@
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Testing"
+    "Testing",
+    "Other"
   ],
   "keywords": [
+    "gitoza",
+    "gitoza lite",
+    "tickets",
+    "wiki",
+    "releases",
     "test case",
     "test cases",
     "manual testing",
     "qa",
-    "quality assurance",
     "test management",
-    "test plan",
-    "test suite",
-    "test run",
     "yaml",
-    "test repository",
+    "markdown",
     "cursor",
     "copilot",
-    "ai",
-    "gitoza"
+    "ai"
   ],
   "galleryBanner": {
     "color": "#1e1e2e",
@@ -39,6 +40,8 @@
   },
   "activationEvents": [
     "workspaceContains:.gitoza-lite/test/cases",
+    "workspaceContains:.gitoza-lite/tasks/tickets",
+    "workspaceContains:.gitoza-lite/wiki",
     "onView:gitoza.launcher",
     "onCommand:gitoza.openTestRepository"
   ],
@@ -47,7 +50,7 @@
     "commands": [
       {
         "command": "gitoza.openTestRepository",
-        "title": "Gitoza: Open Test Repository",
+        "title": "Gitoza: Open",
         "icon": "$(file-code)"
       }
     ],
@@ -55,7 +58,7 @@
       "activitybar": [
         {
           "id": "gitoza",
-          "title": "Gitoza",
+          "title": "Gitoza Lite",
           "icon": "media/activitybar.png"
         }
       ]
@@ -64,7 +67,7 @@
       "gitoza": [
         {
           "id": "gitoza.launcher",
-          "name": "Gitoza",
+          "name": "Gitoza Lite",
           "type": "tree"
         }
       ]
