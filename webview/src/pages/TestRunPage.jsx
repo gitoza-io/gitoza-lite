@@ -542,7 +542,7 @@ export default function TestRunPage({
                   disabled={!isDirty || saving || !selectedRunId}
                   title="Save test results"
                   onClick={() => void handleSave()}
-                  className="inline-flex items-center gap-1 rounded-ui border border-slate-200 px-2 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-indigo-300 dark:hover:bg-indigo-500/10"
+                  className="inline-flex items-center gap-1 rounded-ui border border-transparent px-2 py-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50 enabled:bg-[color:var(--vscode-button-background)] enabled:text-[color:var(--vscode-button-foreground)] enabled:hover:bg-[color:var(--vscode-button-hoverBackground)] disabled:border-[color:var(--vscode-panel-border,var(--vscode-input-border))] disabled:text-[color:var(--vscode-disabledForeground)]"
                 >
                   <Save className="h-3.5 w-3.5" />
                   {saving ? "Saving…" : "Save"}

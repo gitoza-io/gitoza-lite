@@ -58,7 +58,7 @@ function WorkflowStatusAndSync({
             type="button"
             onClick={onSync}
             disabled={syncLoading}
-            className="inline-flex items-center gap-1.5 rounded bg-amber-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-amber-500 disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded bg-amber-600 px-2.5 py-1 text-xs font-medium text-[color:var(--gitoza-on-accent)] transition hover:bg-amber-500 disabled:opacity-60"
             aria-label={syncTooltip}
           >
             {isPlayground ? (

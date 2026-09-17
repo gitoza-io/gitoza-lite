@@ -72,7 +72,7 @@ export default function UnsavedChangesDialog({
             type="button"
             onClick={onSave}
             disabled={saving}
-            className="rounded-ui bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-slate-900"
+            className="rounded-ui bg-indigo-600 px-4 py-2 text-sm font-medium text-[color:var(--gitoza-on-accent)] transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-slate-900"
           >
             {saving ? "Saving…" : "Save"}
           </button>

@@ -3,32 +3,35 @@ import { Check, Circle, Minus, MinusCircle, X, XCircle } from "lucide-react";
 export const RESULT_STYLES = {
   passed: {
     active:
-      "bg-green-200 text-green-800 ring-1 ring-green-500 dark:bg-green-600/30 dark:text-green-200 dark:ring-green-400",
-    idle: "text-green-700/50 hover:text-green-700 hover:bg-green-100/70 dark:text-green-500/40 dark:hover:text-green-400 dark:hover:bg-green-600/15",
-    segmentActive: "bg-green-400 text-green-950 dark:bg-green-600/55 dark:text-green-50",
+      "bg-[color:var(--vscode-testing-iconPassed)] text-[color:var(--gitoza-on-accent)] ring-1 ring-[color:var(--vscode-testing-iconPassed)]",
+    idle: "text-[color:color-mix(in_srgb,var(--vscode-testing-iconPassed)_50%,transparent)] hover:text-[color:var(--vscode-testing-iconPassed)] hover:bg-[color:color-mix(in_srgb,var(--vscode-testing-iconPassed)_15%,transparent)]",
+    segmentActive:
+      "bg-[color:var(--vscode-testing-iconPassed)] text-[color:var(--gitoza-on-accent)]",
     segmentIdle:
-      "bg-transparent text-green-700/35 hover:bg-green-100/70 hover:text-green-700 dark:text-green-500/40 dark:hover:bg-green-600/15 dark:hover:text-green-400",
+      "bg-transparent text-[color:color-mix(in_srgb,var(--vscode-testing-iconPassed)_45%,transparent)] hover:bg-[color:color-mix(in_srgb,var(--vscode-testing-iconPassed)_15%,transparent)] hover:text-[color:var(--vscode-testing-iconPassed)]",
   },
   failed: {
     active:
-      "bg-red-200 text-red-800 ring-1 ring-red-500 dark:bg-red-600/30 dark:text-red-200 dark:ring-red-400",
-    idle: "text-red-600/50 hover:text-red-600 hover:bg-red-100/60 dark:text-red-400/40 dark:hover:text-red-400 dark:hover:bg-red-500/15",
-    segmentActive: "bg-red-500 text-white dark:bg-red-500 dark:text-white",
+      "bg-[color:var(--vscode-errorForeground)] text-[color:var(--gitoza-on-accent)] ring-1 ring-[color:var(--vscode-errorForeground)]",
+    idle: "text-[color:color-mix(in_srgb,var(--vscode-errorForeground)_50%,transparent)] hover:text-[color:var(--vscode-errorForeground)] hover:bg-[color:color-mix(in_srgb,var(--vscode-errorForeground)_15%,transparent)]",
+    segmentActive:
+      "bg-[color:var(--vscode-errorForeground)] text-[color:var(--gitoza-on-accent)]",
     segmentIdle:
-      "bg-transparent text-red-500/35 hover:bg-red-50 hover:text-red-600 dark:text-red-400/40 dark:hover:bg-red-500/15 dark:hover:text-red-400",
+      "bg-transparent text-[color:color-mix(in_srgb,var(--vscode-errorForeground)_45%,transparent)] hover:bg-[color:color-mix(in_srgb,var(--vscode-errorForeground)_15%,transparent)] hover:text-[color:var(--vscode-errorForeground)]",
   },
   skipped: {
     active:
-      "bg-slate-200 text-slate-800 ring-1 ring-slate-400 dark:bg-slate-600/30 dark:text-slate-200 dark:ring-slate-500",
-    idle: "text-slate-500/50 hover:text-slate-600 hover:bg-slate-100/60 dark:text-slate-400/40 dark:hover:text-slate-400 dark:hover:bg-slate-500/15",
-    segmentActive: "bg-slate-500 text-white dark:bg-slate-400 dark:text-slate-900",
+      "bg-[color:var(--vscode-descriptionForeground)] text-[color:var(--gitoza-on-accent)] ring-1 ring-[color:var(--vscode-descriptionForeground)]",
+    idle: "text-[color:color-mix(in_srgb,var(--vscode-descriptionForeground)_50%,transparent)] hover:text-[color:var(--vscode-descriptionForeground)] hover:bg-[color:color-mix(in_srgb,var(--vscode-foreground)_8%,transparent)]",
+    segmentActive:
+      "bg-[color:var(--vscode-descriptionForeground)] text-[color:var(--gitoza-on-accent)]",
     segmentIdle:
-      "bg-transparent text-slate-500/50 hover:bg-slate-100/60 hover:text-slate-600 dark:text-slate-400/40 dark:hover:bg-slate-500/15 dark:hover:text-slate-400",
+      "bg-transparent text-[color:color-mix(in_srgb,var(--vscode-descriptionForeground)_50%,transparent)] hover:bg-[color:color-mix(in_srgb,var(--vscode-foreground)_8%,transparent)] hover:text-[color:var(--vscode-descriptionForeground)]",
   },
   pending: {
     active:
-      "bg-amber-100 text-amber-900 ring-1 ring-amber-400 dark:bg-amber-500/25 dark:text-amber-200 dark:ring-amber-500",
-    idle: "text-amber-700/50 hover:text-amber-800 hover:bg-amber-100/70 dark:text-amber-400/40 dark:hover:text-amber-300 dark:hover:bg-amber-500/15",
+      "bg-[color:var(--vscode-editorWarning-foreground)] text-[color:var(--gitoza-on-accent)] ring-1 ring-[color:var(--vscode-editorWarning-foreground)]",
+    idle: "text-[color:color-mix(in_srgb,var(--vscode-editorWarning-foreground)_50%,transparent)] hover:text-[color:var(--vscode-editorWarning-foreground)] hover:bg-[color:color-mix(in_srgb,var(--vscode-editorWarning-foreground)_15%,transparent)]",
   },
 };
 
