@@ -9,7 +9,9 @@ import DetailPanelLoading from "../components/DetailPanelLoading";
 import AddRunCasesModal from "../components/AddRunCasesModal";
 import UnsavedChangesDialog from "../components/UnsavedChangesDialog";
 import ContextMenu from "../components/ContextMenu";
+import SidebarSection from "../components/SidebarSection";
 import TitleBarAddButton from "../components/TitleBarAddButton";
+import TreeToolbar from "../components/TreeToolbar";
 import { useConfirm } from "../components/ConfirmProvider";
 import { useRunResultDraft } from "../hooks/useRunResultDraft";
 import { useRunBrowseState } from "../hooks/useRunBrowseState";
@@ -55,6 +57,7 @@ export default function TestRunPage({
   const [caseDetail, setCaseDetail] = useState(null);
   const [caseDetailLoading, setCaseDetailLoading] = useState(false);
   const [creatingRun, setCreatingRun] = useState(false);
+  const [runsReady, setRunsReady] = useState(false);
   const [showAddCasesModal, setShowAddCasesModal] = useState(false);
   const [caseListPage, setCaseListPage] = useState(1);
   const [unsavedDialog, setUnsavedDialog] = useState(null);
@@ -85,6 +88,7 @@ export default function TestRunPage({
   const loadRuns = useCallback(async () => {
     if (!hasRunsRoot) {
       setRuns([]);
+      setRunsReady(true);
       return;
     }
     try {
@@ -92,6 +96,8 @@ export default function TestRunPage({
       setRuns(Array.isArray(items) ? items : []);
     } catch {
       setRuns([]);
+    } finally {
+      setRunsReady(true);
     }
   }, [hasRunsRoot]);
 
@@ -480,11 +486,26 @@ export default function TestRunPage({
         }}
         treeColumn={
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="flex shrink-0 items-center justify-end border-b border-slate-200 px-2 py-1 dark:border-slate-700">
-              <TitleBarAddButton tooltip="New run" onClick={() => setCreatingRun(true)} />
+            <div className="shrink-0 border-b border-slate-200 px-2 py-2 dark:border-slate-700">
+              <SidebarSection
+                title="Run"
+                toolbar={
+                  <TreeToolbar
+                    addButton={
+                      <TitleBarAddButton
+                        tooltip="New run"
+                        onClick={() => setCreatingRun(true)}
+                        ariaLabel="New run"
+                      />
+                    }
+                    searchNode={null}
+                  />
+                }
+              />
             </div>
             <RepositoryFolderTree
               tree={unifiedRunTree}
+              projectsReady={runsReady}
               selectedFolderPath={selectedFolderPath}
               onSelectFolder={handleSelectBrowseFolderWithRun}
               expanded={folderExpanded}
