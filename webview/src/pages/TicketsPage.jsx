@@ -4,10 +4,12 @@ import CaseRowLabel from "../components/CaseRowLabel";
 import ConfirmChangesTwoColumnLayout from "../components/ConfirmChangesTwoColumnLayout";
 import ContextMenu from "../components/ContextMenu";
 import InlineRenameInput from "../components/InlineRenameInput";
+import SearchToggleButton from "../components/SearchToggleButton";
 import SidebarRow from "../components/SidebarRow";
 import TicketEditorPanel from "../components/TicketEditorPanel";
 import { TicketTypeIcon } from "../components/TestEntityIcons";
 import TitleBarAddButton from "../components/TitleBarAddButton";
+import TreeInlineSearchBar from "../components/TreeInlineSearchBar";
 import TreeToolbar from "../components/TreeToolbar";
 import SidebarSection, {
   TREE_ROW_CONTENT_GAP,
@@ -26,6 +28,17 @@ import {
   onTicketsUpdated,
   updateTicket,
 } from "../services/api";
+import {
+  filterGroupedMap,
+  itemMatchesTreeSearch,
+} from "../utils/entityTreeSearch";
+
+const TICKET_QUERY_FIELDS = ["ticket_id", "title"];
+const PRIORITY_OPTIONS = [
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+];
 
 export default function TicketsPage({
   hasTicketsRoot,
@@ -41,6 +54,9 @@ export default function TicketsPage({
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
 
   const reload = useCallback(async () => {
     setError(null);
@@ -105,6 +121,53 @@ export default function TicketsPage({
     }
     return map;
   }, [tickets]);
+
+  const searchActive =
+    searchOpen &&
+    (String(searchQuery).trim().length > 0 ||
+      String(priorityFilter).trim().length > 0);
+
+  const filteredTicketsByProject = useMemo(() => {
+    if (!searchActive) return ticketsByProject;
+    return filterGroupedMap(ticketsByProject, (t) =>
+      itemMatchesTreeSearch(t, {
+        query: searchQuery,
+        queryFields: TICKET_QUERY_FIELDS,
+        enumKey: "priority",
+        enumValue: priorityFilter,
+      }),
+    );
+  }, [ticketsByProject, searchActive, searchQuery, priorityFilter]);
+
+  const visibleProjects = useMemo(() => {
+    if (!searchActive) return projects;
+    return projects.filter((p) => filteredTicketsByProject.has(p.name));
+  }, [projects, searchActive, filteredTicketsByProject]);
+
+  useEffect(() => {
+    if (!searchActive) return;
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const name of filteredTicketsByProject.keys()) {
+        if (!next.has(name)) {
+          next.add(name);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [searchActive, filteredTicketsByProject]);
+
+  const handleSearchClick = useCallback(() => {
+    if (searchOpen) {
+      setSearchOpen(false);
+      setSearchQuery("");
+      setPriorityFilter("");
+    } else {
+      setSearchOpen(true);
+    }
+  }, [searchOpen]);
 
   const ensureRoot = async () => {
     await initializeTicketsRoot();
@@ -201,11 +264,30 @@ export default function TicketsPage({
                   ariaLabel="Create project"
                 />
               }
-              searchNode={null}
+              searchNode={
+                <SearchToggleButton
+                  isOpen={searchOpen}
+                  hasActiveChips={searchActive}
+                  onClick={handleSearchClick}
+                  ariaLabelWhenClosed="Search tickets"
+                />
+              }
             />
           }
         />
       </div>
+      {searchOpen ? (
+        <TreeInlineSearchBar
+          query={searchQuery}
+          onQueryChange={setSearchQuery}
+          placeholder="Search tickets…"
+          enumValue={priorityFilter}
+          onEnumChange={setPriorityFilter}
+          enumOptions={PRIORITY_OPTIONS}
+          enumAriaLabel="Filter by priority"
+          enumEmptyLabel="All priorities"
+        />
+      ) : null}
       {error ? (
         <div className="shrink-0 bg-red-50 px-2 py-1 text-[11px] text-red-700 dark:bg-red-950/40 dark:text-red-300">
           {error}
@@ -237,11 +319,15 @@ export default function TicketsPage({
             <div className="px-2 py-4 text-center text-sm text-slate-400">
               No ticket projects yet
             </div>
+          ) : searchActive && visibleProjects.length === 0 ? (
+            <div className="px-2 py-4 text-center text-sm text-slate-400">
+              No matching tickets
+            </div>
           ) : (
             <ul>
-              {projects.map((p) => {
+              {visibleProjects.map((p) => {
                 const isOpen = expanded.has(p.name);
-                const projectTickets = ticketsByProject.get(p.name) || [];
+                const projectTickets = filteredTicketsByProject.get(p.name) || [];
                 const projectSelected =
                   selectedProject === p.name && !selectedPath;
                 return (

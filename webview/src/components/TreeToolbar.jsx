@@ -1,4 +1,4 @@
-import { ArrowUpDown, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import Tooltip from "./Tooltip";
 import { TOOLBAR_BTN_BASE } from "../constants/toolbarStyles";
 
@@ -23,7 +23,7 @@ const TAB_ICON_ONLY_ACTIVE =
  *   onTabChange?: (id: string) => void;
  *   leftExtra?: React.ReactNode;
  *   addButton?: React.ReactNode;
- *   sortButton?: React.ReactNode;
+ *   sortButton?: React.ReactNode | null; — only rendered when a real node is passed
  *   searchNode?: React.ReactNode | null; — pass `null` to hide the default search button
  *   extraActions?: React.ReactNode;
  *   trailingActions?: React.ReactNode;
@@ -44,13 +44,6 @@ function TreeToolbar({
 }) {
   const hasTabs = Array.isArray(tabs) && tabs.length > 0;
 
-  const defaultSort = (
-    <Tooltip label="Sort" placement="bottom">
-      <button type="button" className={TOOLBAR_BTN_BASE} disabled aria-label="Sort (not yet implemented)">
-        <ArrowUpDown className="h-4 w-4" />
-      </button>
-    </Tooltip>
-  );
   const defaultSearch = (
     <Tooltip label="Search" placement="bottom">
       <button type="button" className={TOOLBAR_BTN_BASE} disabled aria-label="Search (not yet implemented)">
@@ -64,9 +57,9 @@ function TreeToolbar({
   const iconGroup = (
     <div className="flex shrink-0 items-center gap-1">
       {addButton != null && <div className="shrink-0" onClickCapture={beforeAction}>{addButton}</div>}
-      {sortButton !== undefined
-        ? <div className="shrink-0" onClickCapture={beforeAction}>{sortButton}</div>
-        : <div className="shrink-0" onClickCapture={beforeAction}>{defaultSort}</div>}
+      {sortButton != null && (
+        <div className="shrink-0" onClickCapture={beforeAction}>{sortButton}</div>
+      )}
       {searchNode !== undefined ? searchNode : defaultSearch}
       {extraActions != null && <div className="flex items-center gap-1 pl-1" onClickCapture={beforeAction}>{extraActions}</div>}
     </div>

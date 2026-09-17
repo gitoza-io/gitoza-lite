@@ -4,10 +4,12 @@ import CaseRowLabel from "../components/CaseRowLabel";
 import ConfirmChangesTwoColumnLayout from "../components/ConfirmChangesTwoColumnLayout";
 import ContextMenu from "../components/ContextMenu";
 import InlineRenameInput from "../components/InlineRenameInput";
+import SearchToggleButton from "../components/SearchToggleButton";
 import SidebarRow from "../components/SidebarRow";
 import WikiEditorPanel from "../components/WikiEditorPanel";
 import { WikiPageIcon } from "../components/TestEntityIcons";
 import TitleBarAddButton from "../components/TitleBarAddButton";
+import TreeInlineSearchBar from "../components/TreeInlineSearchBar";
 import TreeToolbar from "../components/TreeToolbar";
 import SidebarSection, {
   TREE_ROW_CONTENT_GAP,
@@ -26,8 +28,20 @@ import {
   onWikiUpdated,
   updateWikiPage,
 } from "../services/api";
+import {
+  collectMatchingWikiDirs,
+  filterGroupedMap,
+  itemMatchesTreeSearch,
+  pruneWikiTree,
+} from "../utils/entityTreeSearch";
 
 const WIKI_ROOT = ".gitoza-lite/wiki";
+const WIKI_QUERY_FIELDS = ["page_id", "title", "tags"];
+const WIKI_STATUS_OPTIONS = [
+  { value: "draft", label: "Draft" },
+  { value: "published", label: "Published" },
+  { value: "outdated", label: "Outdated" },
+];
 
 function WikiTreeNodes({
   nodes,
@@ -188,6 +202,9 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const reload = useCallback(async () => {
     setError(null);
@@ -248,6 +265,66 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
     }
     return map;
   }, [allPages]);
+
+  const searchActive =
+    searchOpen &&
+    (String(searchQuery).trim().length > 0 ||
+      String(statusFilter).trim().length > 0);
+
+  const filteredPagesByDir = useMemo(() => {
+    if (!searchActive) return pagesByDir;
+    return filterGroupedMap(pagesByDir, (p) =>
+      itemMatchesTreeSearch(p, {
+        query: searchQuery,
+        queryFields: WIKI_QUERY_FIELDS,
+        enumKey: "status",
+        enumValue: statusFilter,
+      }),
+    );
+  }, [pagesByDir, searchActive, searchQuery, statusFilter]);
+
+  const visibleTree = useMemo(() => {
+    if (!searchActive) return tree;
+    const keepDirs = collectMatchingWikiDirs(filteredPagesByDir, WIKI_ROOT);
+    return pruneWikiTree(tree, keepDirs);
+  }, [tree, searchActive, filteredPagesByDir]);
+
+  useEffect(() => {
+    if (!searchActive) return;
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const dir of filteredPagesByDir.keys()) {
+        if (!next.has(dir)) {
+          next.add(dir);
+          changed = true;
+        }
+        // Expand ancestors so nested matches are reachable
+        let current = dir;
+        while (current.startsWith(`${WIKI_ROOT}/`)) {
+          const slash = current.lastIndexOf("/");
+          if (slash <= 0) break;
+          current = current.slice(0, slash);
+          if (current === WIKI_ROOT) break;
+          if (!next.has(current)) {
+            next.add(current);
+            changed = true;
+          }
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [searchActive, filteredPagesByDir]);
+
+  const handleSearchClick = useCallback(() => {
+    if (searchOpen) {
+      setSearchOpen(false);
+      setSearchQuery("");
+      setStatusFilter("");
+    } else {
+      setSearchOpen(true);
+    }
+  }, [searchOpen]);
 
   const ensureRoot = async () => {
     await initializeWikiRoot();
@@ -363,11 +440,30 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
                   ariaLabel="Create folder"
                 />
               }
-              searchNode={null}
+              searchNode={
+                <SearchToggleButton
+                  isOpen={searchOpen}
+                  hasActiveChips={searchActive}
+                  onClick={handleSearchClick}
+                  ariaLabelWhenClosed="Search wiki"
+                />
+              }
             />
           }
         />
       </div>
+      {searchOpen ? (
+        <TreeInlineSearchBar
+          query={searchQuery}
+          onQueryChange={setSearchQuery}
+          placeholder="Search wiki…"
+          enumValue={statusFilter}
+          onEnumChange={setStatusFilter}
+          enumOptions={WIKI_STATUS_OPTIONS}
+          enumAriaLabel="Filter by status"
+          enumEmptyLabel="All statuses"
+        />
+      ) : null}
       {error ? (
         <div className="shrink-0 bg-red-50 px-2 py-1 text-[11px] text-red-700 dark:bg-red-950/40 dark:text-red-300">
           {error}
@@ -397,8 +493,8 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
           ) : null}
 
           <WikiTreeNodes
-            nodes={tree}
-            pagesByDir={pagesByDir}
+            nodes={visibleTree}
+            pagesByDir={filteredPagesByDir}
             expanded={expanded}
             onToggle={toggleDir}
             selectedDir={selectedDir}
@@ -416,6 +512,10 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
           {tree.length === 0 && !creatingFolder ? (
             <div className="px-2 py-4 text-center text-sm text-slate-400">
               No wiki folders or pages yet
+            </div>
+          ) : searchActive && visibleTree.length === 0 ? (
+            <div className="px-2 py-4 text-center text-sm text-slate-400">
+              No matching wiki pages
             </div>
           ) : null}
         </div>
