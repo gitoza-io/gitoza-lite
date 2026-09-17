@@ -46,8 +46,8 @@ function WorkflowStatusAndSync({
         <span
           className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${
             isDrafting
-              ? "bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.5)]"
-              : "bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.4)]"
+              ? "bg-amber-400 shadow-[0_0_4px_color-mix(in_srgb,var(--vscode-editorWarning-foreground)_50%,transparent)]"
+              : "bg-emerald-500 shadow-[0_0_4px_color-mix(in_srgb,var(--vscode-testing-iconPassed)_40%,transparent)]"
           }`}
           aria-label={isDrafting ? "Editing" : "Baseline"}
         />

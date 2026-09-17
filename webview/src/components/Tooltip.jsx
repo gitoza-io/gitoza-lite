@@ -14,8 +14,7 @@ const TOOLTIP_BASE_CLASS =
 // Arrow: softer triangle (wider base, shorter tip) for a friendlier look; color matches tooltip
 const ARROW_LENGTH = 5; // distance from tooltip edge to tip
 const ARROW_HALF_BASE = 4; // half of base width (full base = 8px), gives ~64° tip angle
-const ARROW_COLOR_LIGHT = "rgb(226 232 240)"; // slate-200
-const ARROW_COLOR_DARK = "rgb(71 85 105)"; // slate-600
+const ARROW_COLOR = "var(--vscode-editorHoverWidget-background, var(--gitoza-slate-200))";
 
 /**
  * Reusable tooltip: shows after hover delay, has a small arrow pointing at the trigger.
@@ -154,12 +153,6 @@ function Tooltip({
     return () => document.removeEventListener("click", onDocClick, true);
   }, [visible, hideFromClick, interactive]);
 
-  // Arrow color matches tooltip; detect dark mode for inline style (no dark: in style)
-  const isDark =
-    typeof document !== "undefined" &&
-    document.documentElement.classList.contains("dark");
-  const arrowColor = isDark ? ARROW_COLOR_DARK : ARROW_COLOR_LIGHT;
-
   const arrowStyleRight = {
     position: "absolute",
     left: -ARROW_LENGTH,
@@ -169,7 +162,7 @@ function Tooltip({
     height: 0,
     borderTop: `${ARROW_HALF_BASE}px solid transparent`,
     borderBottom: `${ARROW_HALF_BASE}px solid transparent`,
-    borderRight: `${ARROW_LENGTH}px solid ${arrowColor}`,
+    borderRight: `${ARROW_LENGTH}px solid ${ARROW_COLOR}`,
   };
   const arrowStyleTop = {
     position: "absolute",
@@ -180,7 +173,7 @@ function Tooltip({
     height: 0,
     borderLeft: `${ARROW_HALF_BASE}px solid transparent`,
     borderRight: `${ARROW_HALF_BASE}px solid transparent`,
-    borderTop: `${ARROW_LENGTH}px solid ${arrowColor}`,
+    borderTop: `${ARROW_LENGTH}px solid ${ARROW_COLOR}`,
   };
   const arrowStyleBottom = {
     position: "absolute",
@@ -191,7 +184,7 @@ function Tooltip({
     height: 0,
     borderLeft: `${ARROW_HALF_BASE}px solid transparent`,
     borderRight: `${ARROW_HALF_BASE}px solid transparent`,
-    borderBottom: `${ARROW_LENGTH}px solid ${arrowColor}`,
+    borderBottom: `${ARROW_LENGTH}px solid ${ARROW_COLOR}`,
   };
   const arrowStyleBottomEnd = {
     position: "absolute",
@@ -202,7 +195,7 @@ function Tooltip({
     height: 0,
     borderLeft: `${ARROW_HALF_BASE}px solid transparent`,
     borderRight: `${ARROW_HALF_BASE}px solid transparent`,
-    borderBottom: `${ARROW_LENGTH}px solid ${arrowColor}`,
+    borderBottom: `${ARROW_LENGTH}px solid ${ARROW_COLOR}`,
   };
   const arrowStyle =
     placement === "top"
