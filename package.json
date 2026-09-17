@@ -41,9 +41,7 @@
   "activationEvents": [
     "workspaceContains:.gitoza-lite/test/cases",
     "workspaceContains:.gitoza-lite/tasks/tickets",
-    "workspaceContains:.gitoza-lite/wiki",
-    "onView:gitoza.launcher",
-    "onCommand:gitoza.openTestRepository"
+    "workspaceContains:.gitoza-lite/wiki"
   ],
   "main": "./dist/extension.js",
   "contributes": {
