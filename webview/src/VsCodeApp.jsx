@@ -8,7 +8,7 @@ import WikiPage from "./pages/WikiPage";
 import { getInitPayload, onInit, onThemeChanged, ready } from "./api/vscodeApi";
 
 export default function VsCodeApp() {
-  const [activeView, setActiveView] = useState("explorer");
+  const [activeView, setActiveView] = useState("tickets");
   const [hasCasesRoot, setHasCasesRoot] = useState(
     () => getInitPayload()?.hasCasesRoot ?? false,
   );

@@ -10,11 +10,11 @@ function navButtonClassName(isActive) {
 }
 
 const primaryNavItems = [
-  { key: "explorer", label: "Test Repository", icon: File },
-  { key: "testrun", label: "Test Run", icon: FlaskConical },
   { key: "tickets", label: "Tickets", icon: Ticket },
   { key: "releases", label: "Releases", icon: Rocket },
   { key: "wiki", label: "Wiki", icon: Library },
+  { key: "explorer", label: "Test Repository", icon: File },
+  { key: "testrun", label: "Test Run", icon: FlaskConical },
 ];
 
 function NavIconButtons({ items, activeView, onChangeView }) {
