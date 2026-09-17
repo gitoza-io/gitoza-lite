@@ -7,7 +7,8 @@ import InlineRenameInput from "../components/InlineRenameInput";
 import SearchToggleButton from "../components/SearchToggleButton";
 import SidebarRow from "../components/SidebarRow";
 import ReleaseEditorPanel from "../components/ReleaseEditorPanel";
-import { ReleaseIcon } from "../components/TestEntityIcons";
+import TicketEditorPanel from "../components/TicketEditorPanel";
+import { ReleaseIcon, TicketTypeIcon } from "../components/TestEntityIcons";
 import TitleBarAddButton from "../components/TitleBarAddButton";
 import TreeInlineSearchBar from "../components/TreeInlineSearchBar";
 import TreeToolbar from "../components/TreeToolbar";
@@ -22,11 +23,14 @@ import {
   createRelease,
   createTicketProject,
   getReleaseDetail,
+  getTicketDetail,
   initializeTicketsRoot,
   listReleases,
   listTicketProjects,
+  listTickets,
   onTicketsUpdated,
   updateRelease,
+  updateTicket,
 } from "../services/api";
 import {
   filterGroupedMap,
@@ -46,13 +50,17 @@ export default function ReleasesPage({
 }) {
   const [projects, setProjects] = useState([]);
   const [releases, setReleases] = useState([]);
+  const [tickets, setTickets] = useState([]);
   const [expanded, setExpanded] = useState(() => new Set());
+  const [expandedReleases, setExpandedReleases] = useState(() => new Set());
   const [creatingProject, setCreatingProject] = useState(false);
   const [creatingReleaseInProject, setCreatingReleaseInProject] =
     useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [selectedPath, setSelectedPath] = useState(null);
-  const [detail, setDetail] = useState(null);
+  const [selectedReleasePath, setSelectedReleasePath] = useState(null);
+  const [selectedTicketPath, setSelectedTicketPath] = useState(null);
+  const [releaseDetail, setReleaseDetail] = useState(null);
+  const [ticketDetail, setTicketDetail] = useState(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
@@ -67,6 +75,8 @@ export default function ReleasesPage({
       setProjects(proj || []);
       const list = await listReleases({});
       setReleases(list || []);
+      const ticketList = await listTickets({});
+      setTickets(ticketList?.items || []);
       setExpanded((prev) => {
         if (prev.size > 0) return prev;
         const next = new Set();
@@ -85,21 +95,28 @@ export default function ReleasesPage({
   useEffect(() => {
     return onTicketsUpdated(() => {
       void reload();
-      if (selectedPath) {
-        void getReleaseDetail(selectedPath).then(setDetail).catch(() => {});
+      if (selectedReleasePath) {
+        void getReleaseDetail(selectedReleasePath)
+          .then(setReleaseDetail)
+          .catch(() => {});
+      }
+      if (selectedTicketPath) {
+        void getTicketDetail(selectedTicketPath)
+          .then(setTicketDetail)
+          .catch(() => {});
       }
     });
-  }, [reload, selectedPath]);
+  }, [reload, selectedReleasePath, selectedTicketPath]);
 
   useEffect(() => {
-    if (!selectedPath) {
-      setDetail(null);
+    if (!selectedReleasePath) {
+      setReleaseDetail(null);
       return;
     }
     let cancelled = false;
-    void getReleaseDetail(selectedPath)
+    void getReleaseDetail(selectedReleasePath)
       .then((d) => {
-        if (!cancelled) setDetail(d);
+        if (!cancelled) setReleaseDetail(d);
       })
       .catch((e) => {
         if (!cancelled) {
@@ -109,7 +126,27 @@ export default function ReleasesPage({
     return () => {
       cancelled = true;
     };
-  }, [selectedPath]);
+  }, [selectedReleasePath]);
+
+  useEffect(() => {
+    if (!selectedTicketPath) {
+      setTicketDetail(null);
+      return;
+    }
+    let cancelled = false;
+    void getTicketDetail(selectedTicketPath)
+      .then((d) => {
+        if (!cancelled) setTicketDetail(d);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Failed to load ticket");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTicketPath]);
 
   const releasesByProject = useMemo(() => {
     const map = new Map();
@@ -123,6 +160,20 @@ export default function ReleasesPage({
     }
     return map;
   }, [releases]);
+
+  const ticketsByReleaseId = useMemo(() => {
+    const map = new Map();
+    for (const t of tickets) {
+      const releaseId = (t.release || "").trim();
+      if (!releaseId) continue;
+      if (!map.has(releaseId)) map.set(releaseId, []);
+      map.get(releaseId).push(t);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => a.ticket_id.localeCompare(b.ticket_id));
+    }
+    return map;
+  }, [tickets]);
 
   const searchActive =
     searchOpen &&
@@ -176,6 +227,14 @@ export default function ReleasesPage({
     onTicketsRootInitialized?.();
   };
 
+  const clearDetailSelection = () => {
+    setSelectedReleasePath(null);
+    setSelectedTicketPath(null);
+    setReleaseDetail(null);
+    setTicketDetail(null);
+    setEditing(false);
+  };
+
   const handleCommitInlineProject = useCallback(
     async (name) => {
       if (!name?.trim()) {
@@ -188,9 +247,7 @@ export default function ReleasesPage({
         const projectName = result.project_path.split("/").pop();
         setCreatingProject(false);
         setSelectedProject(projectName);
-        setSelectedPath(null);
-        setEditing(false);
-        setDetail(null);
+        clearDetailSelection();
         setExpanded((prev) => new Set(prev).add(projectName));
         await reload();
       } catch (e) {
@@ -219,9 +276,11 @@ export default function ReleasesPage({
         });
         setCreatingReleaseInProject(null);
         setSelectedProject(projectName);
+        setSelectedTicketPath(null);
+        setTicketDetail(null);
         setExpanded((prev) => new Set(prev).add(projectName));
         await reload();
-        setSelectedPath(created.file_path);
+        setSelectedReleasePath(created.file_path);
         setEditing(true);
       } catch (e) {
         setCreatingReleaseInProject(null);
@@ -232,11 +291,19 @@ export default function ReleasesPage({
     [creatingReleaseInProject, reload, onTicketsRootInitialized],
   );
 
-  const handleSave = async (payload) => {
-    if (!selectedPath) return;
-    await updateRelease(selectedPath, payload);
+  const handleSaveRelease = async (payload) => {
+    if (!selectedReleasePath) return;
+    await updateRelease(selectedReleasePath, payload);
     setEditing(false);
-    setDetail(await getReleaseDetail(selectedPath));
+    setReleaseDetail(await getReleaseDetail(selectedReleasePath));
+    await reload();
+  };
+
+  const handleSaveTicket = async (payload) => {
+    if (!selectedTicketPath) return;
+    await updateTicket(selectedTicketPath, payload);
+    setEditing(false);
+    setTicketDetail(await getTicketDetail(selectedTicketPath));
     await reload();
   };
 
@@ -249,13 +316,40 @@ export default function ReleasesPage({
     });
   };
 
+  const toggleRelease = (releaseId) => {
+    setExpandedReleases((prev) => {
+      const next = new Set(prev);
+      if (next.has(releaseId)) next.delete(releaseId);
+      else next.add(releaseId);
+      return next;
+    });
+  };
+
   const selectProject = (name) => {
     setSelectedProject(name);
-    setSelectedPath(null);
-    setEditing(false);
-    setDetail(null);
+    clearDetailSelection();
     setCreatingReleaseInProject(null);
     setExpanded((prev) => new Set(prev).add(name));
+  };
+
+  const selectRelease = (projectName, release) => {
+    setSelectedProject(projectName);
+    setCreatingReleaseInProject(null);
+    setSelectedTicketPath(null);
+    setTicketDetail(null);
+    setEditing(false);
+    setSelectedReleasePath(release.file_path);
+    setExpandedReleases((prev) => new Set(prev).add(release.release_id));
+  };
+
+  const selectTicket = (projectName, release, ticket) => {
+    setSelectedProject(projectName);
+    setCreatingReleaseInProject(null);
+    setSelectedReleasePath(null);
+    setReleaseDetail(null);
+    setEditing(false);
+    setSelectedTicketPath(ticket.file_path);
+    setExpandedReleases((prev) => new Set(prev).add(release.release_id));
   };
 
   const listColumn = (
@@ -338,9 +432,12 @@ export default function ReleasesPage({
             <ul>
               {visibleProjects.map((p) => {
                 const isOpen = expanded.has(p.name);
-                const projectReleases = filteredReleasesByProject.get(p.name) || [];
+                const projectReleases =
+                  filteredReleasesByProject.get(p.name) || [];
                 const projectSelected =
-                  selectedProject === p.name && !selectedPath;
+                  selectedProject === p.name &&
+                  !selectedReleasePath &&
+                  !selectedTicketPath;
                 const creatingHere = creatingReleaseInProject === p.name;
                 return (
                   <li key={p.name}>
@@ -441,44 +538,154 @@ export default function ReleasesPage({
                           </li>
                         ) : null}
                         {projectReleases.map((r) => {
-                          const isSelected = selectedPath === r.file_path;
+                          const releaseOpen = expandedReleases.has(
+                            r.release_id,
+                          );
+                          const releaseTickets =
+                            ticketsByReleaseId.get(r.release_id) || [];
+                          const releaseSelected =
+                            selectedReleasePath === r.file_path &&
+                            !selectedTicketPath;
                           return (
                             <li key={r.file_path}>
                               <div
-                                className={`flex min-w-0 w-full ${
-                                  isSelected
+                                role="button"
+                                tabIndex={0}
+                                className={`flex min-w-0 w-full cursor-pointer select-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400/80 dark:focus-visible:ring-indigo-500/70 ${
+                                  releaseSelected
                                     ? treeRowSelectedFullWidthClass
                                     : treeRowHoverFullWidthClass
                                 }`}
+                                onClick={() => selectRelease(p.name, r)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    selectRelease(p.name, r);
+                                  }
+                                }}
                               >
                                 <TreeRowGuides level={1} />
                                 <div
-                                  className="flex min-w-0 flex-1 items-center gap-1"
+                                  className="flex min-w-0 flex-1 items-center gap-0.5 font-medium"
                                   style={{
                                     paddingLeft: `${TREE_ROW_CONTENT_GAP}px`,
                                   }}
                                 >
-                                  <div className="min-w-0 flex-1">
-                                    <SidebarRow
-                                      selected={isSelected}
-                                      selectionOnParent
-                                      icon={<ReleaseIcon />}
-                                      label={
-                                        <CaseRowLabel
-                                          title={r.name}
-                                          caseId={r.release_id}
-                                        />
-                                      }
-                                      onClick={() => {
-                                        setSelectedProject(p.name);
-                                        setCreatingReleaseInProject(null);
-                                        setEditing(false);
-                                        setSelectedPath(r.file_path);
-                                      }}
-                                    />
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleRelease(r.release_id);
+                                    }}
+                                    aria-expanded={releaseOpen}
+                                    aria-label={
+                                      releaseOpen
+                                        ? `Collapse ${r.name}`
+                                        : `Expand ${r.name}`
+                                    }
+                                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                                  >
+                                    {releaseOpen ? (
+                                      <ChevronDown
+                                        className="h-3.5 w-3.5"
+                                        aria-hidden
+                                      />
+                                    ) : (
+                                      <ChevronRight
+                                        className="h-3.5 w-3.5"
+                                        aria-hidden
+                                      />
+                                    )}
+                                  </button>
+                                  <div
+                                    className={`group flex min-w-0 flex-1 select-none items-center gap-1 rounded py-1.5 pr-1 text-left text-sm ${
+                                      releaseSelected
+                                        ? "font-semibold text-ink dark:text-slate-100"
+                                        : "text-slate-600 dark:text-slate-300"
+                                    }`}
+                                  >
+                                    <span className="shrink-0">
+                                      <ReleaseIcon />
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                      <CaseRowLabel
+                                        title={r.name}
+                                        caseId={r.release_id}
+                                      />
+                                    </div>
+                                    <span className="ml-auto shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                      {releaseTickets.length}
+                                    </span>
                                   </div>
                                 </div>
                               </div>
+                              {releaseOpen ? (
+                                <ul>
+                                  {releaseTickets.map((t) => {
+                                    const isSelected =
+                                      selectedTicketPath === t.file_path;
+                                    return (
+                                      <li key={t.file_path}>
+                                        <div
+                                          className={`flex min-w-0 w-full ${
+                                            isSelected
+                                              ? treeRowSelectedFullWidthClass
+                                              : treeRowHoverFullWidthClass
+                                          }`}
+                                        >
+                                          <TreeRowGuides level={2} />
+                                          <div
+                                            className="flex min-w-0 flex-1 items-center gap-1"
+                                            style={{
+                                              paddingLeft: `${TREE_ROW_CONTENT_GAP}px`,
+                                            }}
+                                          >
+                                            <div className="min-w-0 flex-1">
+                                              <SidebarRow
+                                                selected={isSelected}
+                                                selectionOnParent
+                                                icon={
+                                                  <TicketTypeIcon
+                                                    type={
+                                                      t.type ||
+                                                      t.ticket_type ||
+                                                      "task"
+                                                    }
+                                                  />
+                                                }
+                                                label={
+                                                  <CaseRowLabel
+                                                    title={t.title}
+                                                    caseId={t.ticket_id}
+                                                  />
+                                                }
+                                                onClick={() =>
+                                                  selectTicket(p.name, r, t)
+                                                }
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </li>
+                                    );
+                                  })}
+                                  {releaseTickets.length === 0 ? (
+                                    <li>
+                                      <div className="flex min-w-0 w-full">
+                                        <TreeRowGuides level={2} />
+                                        <div
+                                          className="py-2 text-sm text-slate-400"
+                                          style={{
+                                            paddingLeft: `${TREE_ROW_CONTENT_GAP}px`,
+                                          }}
+                                        >
+                                          No tickets
+                                        </div>
+                                      </div>
+                                    </li>
+                                  ) : null}
+                                </ul>
+                              ) : null}
                             </li>
                           );
                         })}
@@ -522,9 +729,7 @@ export default function ReleasesPage({
               setCreatingReleaseInProject(projectName);
               setExpanded((prev) => new Set(prev).add(projectName));
               setSelectedProject(projectName);
-              setSelectedPath(null);
-              setEditing(false);
-              setDetail(null);
+              clearDetailSelection();
             },
           },
         ]}
@@ -532,34 +737,43 @@ export default function ReleasesPage({
     </div>
   );
 
+  const detailColumn = selectedTicketPath ? (
+    <TicketEditorPanel
+      ticketDetail={ticketDetail}
+      selectedTicketFilePath={selectedTicketPath}
+      isEditing={editing}
+      onToggleEdit={(next) => setEditing(Boolean(next))}
+      onSave={handleSaveTicket}
+      onClearSelection={clearDetailSelection}
+      emptyTitle="Select a ticket"
+      emptyDescription="or assign a ticket to this release from the Tickets view"
+    />
+  ) : (
+    <ReleaseEditorPanel
+      releaseDetail={releaseDetail}
+      selectedReleaseFilePath={selectedReleasePath}
+      isEditing={editing}
+      onToggleEdit={(next) => setEditing(Boolean(next))}
+      onSave={handleSaveRelease}
+      onClearSelection={clearDetailSelection}
+      emptyTitle={
+        projects.length === 0
+          ? "Create a ticket project to get started"
+          : "Select a release"
+      }
+      emptyDescription={
+        projects.length === 0
+          ? "Use + to create a project"
+          : "or right-click a project to create one"
+      }
+    />
+  );
+
   return (
     <ConfirmChangesTwoColumnLayout
       storageKeys={{ sidebarWidth: "releases.col.sidebarWidth" }}
       sidebarColumn={listColumn}
-      detailColumn={
-        <ReleaseEditorPanel
-          releaseDetail={detail}
-          selectedReleaseFilePath={selectedPath}
-          isEditing={editing}
-          onToggleEdit={(next) => setEditing(Boolean(next))}
-          onSave={handleSave}
-          onClearSelection={() => {
-            setSelectedPath(null);
-            setDetail(null);
-            setEditing(false);
-          }}
-          emptyTitle={
-            projects.length === 0
-              ? "Create a ticket project to get started"
-              : "Select a release"
-          }
-          emptyDescription={
-            projects.length === 0
-              ? "Use + to create a project"
-              : "or right-click a project to create one"
-          }
-        />
-      }
+      detailColumn={detailColumn}
     />
   );
 }

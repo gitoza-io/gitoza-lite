@@ -15,6 +15,7 @@ import TicketDetailView from "./TicketDetailView";
 import Tooltip from "./Tooltip";
 import { priorityColors } from "./TestCaseDetailModal";
 import { useMarkdownEditor } from "../hooks/useMarkdownEditor";
+import { listReleases, onTicketsUpdated } from "../services/api";
 import { getTagColorClass } from "../utils/tagColor";
 
 const inlineCls =
@@ -49,6 +50,7 @@ function TicketEditorPanel({
   const [assignedTo, setAssignedTo] = useState("");
   const [reporter, setReporter] = useState("");
   const [release, setRelease] = useState("");
+  const [projectReleases, setProjectReleases] = useState([]);
   const [tagsStr, setTagsStr] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [params, setParams] = useState({});
@@ -65,6 +67,51 @@ function TicketEditorPanel({
     !!selectedTicketFilePath &&
     ticketDetail.file_path === selectedTicketFilePath &&
     formSyncedPath === selectedTicketFilePath;
+
+  const ticketProject =
+    ticketDetail?.project ||
+    selectedTicketFilePath?.split("/").slice(-2, -1)[0] ||
+    "";
+
+  useEffect(() => {
+    if (!ticketProject) {
+      setProjectReleases([]);
+      return;
+    }
+    let cancelled = false;
+    const load = () => {
+      void listReleases({ project: ticketProject })
+        .then((list) => {
+          if (!cancelled) setProjectReleases(Array.isArray(list) ? list : []);
+        })
+        .catch(() => {
+          if (!cancelled) setProjectReleases([]);
+        });
+    };
+    load();
+    const unsubscribe = onTicketsUpdated(load);
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [ticketProject]);
+
+  const releaseSelectOptions = useMemo(() => {
+    const options = projectReleases.map((r) => ({
+      value: r.release_id,
+      label: r.name
+        ? `${r.name} (${r.release_id})`
+        : r.release_id,
+    }));
+    const current = (release || "").trim();
+    if (
+      current &&
+      !options.some((o) => o.value === current)
+    ) {
+      options.unshift({ value: current, label: `${current} (missing)` });
+    }
+    return options;
+  }, [projectReleases, release]);
 
   useEffect(() => {
     if (!ticketDetail) {
@@ -361,13 +408,19 @@ function TicketEditorPanel({
           />
         </MetadataFieldEdit>
         <MetadataFieldEdit label="Release">
-          <input
-            type="text"
+          <select
             value={release}
             onChange={(e) => setRelease(e.target.value)}
-            placeholder="—"
-            className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS}`}
-          />
+            className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
+            aria-label="Release"
+          >
+            <option value="">—</option>
+            {releaseSelectOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </MetadataFieldEdit>
         <MetadataFieldEdit label="Tags" className="min-w-[12rem]">
           <div className="relative min-w-[12rem]">
