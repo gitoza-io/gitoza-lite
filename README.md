@@ -4,6 +4,19 @@ Local-first companion to [Gitoza Desktop](https://gitoza.com): manage **tickets*
 
 Everything lives under `.gitoza-lite/` as files in your repo (git-friendly, AI-friendly).
 
+## Try the in-repo handbook
+
+This repository ships both **extension source** and a seeded **handbook** under `.gitoza-lite/` (wiki, tickets, test cases, and a smoke run). The handbook is **repo demo data only** — it is excluded from the published `.vsix`.
+
+1. Clone this repository and open the folder in VS Code.
+2. Install **Gitoza Lite** from the Marketplace, or press **F5** (*Run Extension*) from a development checkout — the host opens `.dev/handbook-workspace` (symlinked handbook) so it does not jump back to the parent window.
+3. Run **Gitoza: Open** (or click the Gitoza Lite Activity Bar icon).
+4. Start here:
+   - **Wiki** → `02-getting-started` → *Welcome — open this handbook* (`W-LITE01`)
+   - **Tickets** → project **Gitoza_Lite** → *Welcome — start here* (`LITE-WELCOM`)
+   - **Test Repository** → project **gitoza.lite.handbook**
+   - **Test Run** → **R-SMOKE1** (Handbook smoke)
+
 ## Demo
 
 Browse the Test Repository, create a case, and run a manual Pass / Fail / Skip flow. *(Demo video covers Tests today — ticket/wiki walkthrough coming soon.)*

@@ -180,9 +180,9 @@ function WikiTreeNodes({
 export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
   const [tree, setTree] = useState([]);
   const [allPages, setAllPages] = useState([]);
-  const [expanded, setExpanded] = useState(() => new Set([WIKI_ROOT]));
+  const [expanded, setExpanded] = useState(() => new Set());
   const [creatingFolder, setCreatingFolder] = useState(false);
-  const [selectedDir, setSelectedDir] = useState(WIKI_ROOT);
+  const [selectedDir, setSelectedDir] = useState(null);
   const [selectedPath, setSelectedPath] = useState(null);
   const [detail, setDetail] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -249,8 +249,6 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
     return map;
   }, [allPages]);
 
-  const rootPages = pagesByDir.get(WIKI_ROOT) || [];
-
   const ensureRoot = async () => {
     await initializeWikiRoot();
     onWikiRootInitialized?.();
@@ -264,7 +262,8 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
       }
       try {
         await ensureRoot();
-        const parent = selectedDir || WIKI_ROOT;
+        const parent =
+          selectedDir && selectedDir !== WIKI_ROOT ? selectedDir : WIKI_ROOT;
         const created = await createWikiFolder(parent, name.trim());
         setCreatingFolder(false);
         setSelectedDir(created.directory_path);
@@ -273,7 +272,7 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
         setDetail(null);
         setExpanded((prev) => {
           const next = new Set(prev);
-          next.add(parent);
+          if (parent !== WIKI_ROOT) next.add(parent);
           next.add(created.directory_path);
           return next;
         });
@@ -289,7 +288,11 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
 
   const handleCreatePage = useCallback(
     async (directory) => {
-      const dir = directory || selectedDir || WIKI_ROOT;
+      const dir = directory || selectedDir;
+      if (!dir || dir === WIKI_ROOT) {
+        setError("Select a folder to create a page");
+        return;
+      }
       try {
         await ensureRoot();
         const created = await createWikiPage({
@@ -346,8 +349,6 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
     });
   };
 
-  const rootSelected = selectedDir === WIKI_ROOT && !selectedPath;
-
   const listColumn = (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-slate-200 px-2 py-2 dark:border-slate-700">
@@ -395,90 +396,6 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
             </div>
           ) : null}
 
-          <div
-            role="button"
-            tabIndex={0}
-            className={`flex min-w-0 w-full cursor-pointer select-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400/80 dark:focus-visible:ring-indigo-500/70 ${
-              rootSelected
-                ? treeRowSelectedFullWidthClass
-                : treeRowHoverFullWidthClass
-            }`}
-            onClick={() => selectDir(WIKI_ROOT)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                selectDir(WIKI_ROOT);
-              }
-            }}
-            onContextMenu={(e) => openFolderContextMenu(e, WIKI_ROOT)}
-          >
-            <TreeRowGuides level={0} />
-            <div
-              className="flex min-w-0 flex-1 items-center gap-0.5 font-medium"
-              style={{ paddingLeft: `${TREE_ROW_CONTENT_GAP}px` }}
-            >
-              <span className="w-6 shrink-0" />
-              <div
-                className={`group flex min-w-0 flex-1 select-none items-center gap-1 rounded py-1.5 pr-1 text-left text-sm ${
-                  rootSelected
-                    ? "font-semibold text-ink dark:text-slate-100"
-                    : "text-slate-600 dark:text-slate-300"
-                }`}
-              >
-                <Box
-                  className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400"
-                  aria-hidden
-                />
-                <span className="min-w-0 flex-1 truncate">Wiki root</span>
-                <span className="ml-auto shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                  {rootPages.length}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <ul>
-            {rootPages.map((p) => {
-              const isSelected = selectedPath === p.file_path;
-              return (
-                <li key={p.file_path}>
-                  <div
-                    className={`flex min-w-0 w-full ${
-                      isSelected
-                        ? treeRowSelectedFullWidthClass
-                        : treeRowHoverFullWidthClass
-                    }`}
-                  >
-                    <TreeRowGuides level={1} />
-                    <div
-                      className="flex min-w-0 flex-1 items-center gap-1"
-                      style={{ paddingLeft: `${TREE_ROW_CONTENT_GAP}px` }}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <SidebarRow
-                          selected={isSelected}
-                          selectionOnParent
-                          icon={<WikiPageIcon />}
-                          label={
-                            <CaseRowLabel
-                              title={p.title}
-                              caseId={p.page_id}
-                            />
-                          }
-                          onClick={() => {
-                            setSelectedDir(WIKI_ROOT);
-                            setEditing(false);
-                            setSelectedPath(p.file_path);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-
           <WikiTreeNodes
             nodes={tree}
             pagesByDir={pagesByDir}
@@ -496,7 +413,7 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
             depth={0}
           />
 
-          {tree.length === 0 && rootPages.length === 0 && !creatingFolder ? (
+          {tree.length === 0 && !creatingFolder ? (
             <div className="px-2 py-4 text-center text-sm text-slate-400">
               No wiki folders or pages yet
             </div>
@@ -514,7 +431,9 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
             label: "Create page",
             onClick: () => {
               const directory = contextMenu?.directory;
-              if (directory) void handleCreatePage(directory);
+              if (directory && directory !== WIKI_ROOT) {
+                void handleCreatePage(directory);
+              }
             },
           },
         ]}
@@ -539,12 +458,12 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
             setEditing(false);
           }}
           emptyTitle={
-            tree.length === 0 && rootPages.length === 0
+            tree.length === 0
               ? "Create a folder to get started"
               : "Select a page"
           }
           emptyDescription={
-            tree.length === 0 && rootPages.length === 0
+            tree.length === 0
               ? "Use + to create a folder"
               : "or right-click a folder to create one"
           }
