@@ -7,11 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- **Tickets** and **Wiki** use a Desktop-style two-column tree + detail layout (Kanban board removed)
-
-## [0.3.0] - 2026-09-13
+## [0.3.0] - 2026-09-17
 
 ### Added
 
@@ -21,8 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Extension renamed to **Gitoza Lite** (`gitoza-lite`); publisher remains `gitoza`
-- Command palette entry is **Gitoza: Open**; Activity Bar and editor tab use Gitoza Lite branding
+- Marketplace listing title is **Gitoza Lite — Task & Test Management in YAML**; short description targets task/test management in YAML search
+- Extension identity remains `gitoza.gitoza-yaml-test-cases`; publisher remains `gitoza`
+- Command palette entry is **Gitoza Lite: Open Tickets, Wiki & Tests**; Activity Bar and editor tab use Gitoza Lite branding
+- **Tickets** and **Wiki** use a Desktop-style two-column tree + detail layout (Kanban board removed)
 - README covers Tickets, Wiki, Releases, and Tests
 
 ## [0.2.1] - 2026-07-28
@@ -75,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Activity Bar launcher and **Gitoza: Open Test Repository** command
 - Pending run-result updates with unsaved-changes prompt before save
 
+[0.3.0]: https://github.com/gitoza-io/gitoza-yaml-test-cases/releases/tag/v0.3.0
 [0.2.1]: https://github.com/gitoza-io/gitoza-yaml-test-cases/releases/tag/v0.2.1
 [0.2.0]: https://github.com/gitoza-io/gitoza-yaml-test-cases/releases/tag/v0.2.0
 [0.1.1]: https://github.com/gitoza-io/gitoza-yaml-test-cases/releases/tag/v0.1.1

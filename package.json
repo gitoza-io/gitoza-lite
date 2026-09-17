@@ -1,7 +1,7 @@
 {
-  "name": "gitoza-lite",
-  "displayName": "Gitoza Lite — Tickets, Wiki & Tests",
-  "description": "Local-first tickets, wiki pages, releases, and test cases as YAML in your repo. AI-friendly plain files for Cursor, Copilot & ChatGPT.",
+  "name": "gitoza-yaml-test-cases",
+  "displayName": "Gitoza Lite — Task & Test Management in YAML",
+  "description": "Task and test management in YAML — tickets, wiki, releases, and YAML test cases in your repo. Local-first, AI-friendly files for VS Code, Cursor, Copilot & ChatGPT.",
   "version": "0.3.0",
   "publisher": "gitoza",
   "license": "MIT",
@@ -20,19 +20,22 @@
   "keywords": [
     "gitoza",
     "gitoza lite",
+    "task management",
+    "test management",
+    "yaml test",
+    "yaml test cases",
+    "test case",
     "tickets",
     "wiki",
     "releases",
-    "test case",
-    "test cases",
-    "manual testing",
     "qa",
-    "test management",
+    "manual testing",
     "yaml",
     "markdown",
+    "git",
+    "local-first",
     "cursor",
-    "copilot",
-    "ai"
+    "copilot"
   ],
   "galleryBanner": {
     "color": "#1e1e2e",
@@ -48,7 +51,8 @@
     "commands": [
       {
         "command": "gitoza.openTestRepository",
-        "title": "Gitoza: Open",
+        "title": "Open Tickets, Wiki & Tests",
+        "category": "Gitoza Lite",
         "icon": "$(file-code)"
       }
     ],

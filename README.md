@@ -1,6 +1,6 @@
-# Gitoza Lite — Tickets, Wiki & Tests for VS Code
+# Gitoza Lite — Task & Test Management in YAML
 
-Local-first companion to [Gitoza Desktop](https://gitoza.com): manage **tickets**, **wiki pages**, **releases**, and **test cases** as plain YAML + Markdown in your workspace — browse and edit from a structured UI inside [VS Code](https://code.visualstudio.com/).
+Local-first companion to [Gitoza Desktop](https://gitoza.com): **task and test management in YAML** — **tickets**, **wiki pages**, **releases**, and **YAML test cases** as files in your repo. Browse and edit them from a structured UI inside [VS Code](https://code.visualstudio.com/).
 
 Everything lives under `.gitoza-lite/` as files in your repo (git-friendly, AI-friendly).
 
@@ -10,7 +10,7 @@ This repository ships both **extension source** and a seeded **handbook** under 
 
 1. Clone this repository and open the folder in VS Code.
 2. Install **Gitoza Lite** from the Marketplace, or press **F5** (*Run Extension*) from a development checkout — the host opens `.dev/handbook-workspace` (symlinked handbook) so it does not jump back to the parent window.
-3. Run **Gitoza: Open** (or click the Gitoza Lite Activity Bar icon).
+3. Run **Gitoza Lite: Open Tickets, Wiki & Tests** (or click the Gitoza Lite Activity Bar icon).
 4. Start here:
    - **Wiki** → `02-getting-started` → *Welcome — open this handbook* (`W-LITE01`)
    - **Tickets** → project **Gitoza_Lite** → *Welcome — start here* (`LITE-WELCOM`)
@@ -37,7 +37,7 @@ Tickets, wiki pages, releases, and test cases are plain YAML in your repo — ea
 
 1. Open a repository in VS Code.
 2. The **Gitoza Lite** tab opens in the editor area when the extension activates (when a `.gitoza-lite/` root exists, or after you run the open command).
-3. If the tab was closed, click the **Gitoza Lite** icon in the Activity Bar, or run **Gitoza: Open** from the Command Palette.
+3. If the tab was closed, click the **Gitoza Lite** icon in the Activity Bar, or run **Gitoza Lite: Open Tickets, Wiki & Tests** from the Command Palette.
 4. Use the left icon rail to switch between **Test Repository**, **Test Run**, **Tickets**, **Releases**, and **Wiki**.
 5. Create a first project (tests or tickets) or wiki page from the empty state to initialize the matching folder under `.gitoza-lite/`.
 
