@@ -744,6 +744,14 @@ function TestRepository({
       onOpenStorageSyncSettings={onOpenStorageSyncSettings}
       gitProfileVersion={gitProfileVersion}
       manualSave={vscodeMode}
+      emptyTitle={
+        !tree?.length
+          ? "Create a project to get started"
+          : "Select a test case from the list"
+      }
+      emptyDescription={
+        !tree?.length ? "Use + to create a project" : "or create a new one"
+      }
     />
   );
 

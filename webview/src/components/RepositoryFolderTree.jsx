@@ -65,6 +65,7 @@ function RepositoryFolderTree({
   pinnedProjectPaths = null,
   onTogglePinProject = null,
   isPinnedProject = null,
+  emptyMessage = "No test projects yet",
 }) {
   const [internalExpanded, setInternalExpanded] = useState(() => new Set());
   const isControlled = expandedProp !== undefined && onExpandedChange != null;
@@ -397,7 +398,7 @@ function RepositoryFolderTree({
     }
     return (
       <div className="px-2 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
-        No test suites in repository.
+        {emptyMessage}
       </div>
     );
   }

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 /**
- * App-wide confirmation modal (replaces window.confirm). Matches PushFailedModal / CreateProjectModal styling.
+ * App-wide confirmation modal (replaces window.confirm). Matches PushFailedModal styling.
  *
  * @param {object} props
  * @param {boolean} props.open

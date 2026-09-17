@@ -432,7 +432,7 @@ function CaseTree({
   if (!treeWithCases?.length && !creatingProject) {
     return (
       <div className="py-4 text-center text-sm text-slate-500 dark:text-slate-400">
-        {hideEmptyNodes ? "No matching cases found." : "No test suites in repository."}
+        {hideEmptyNodes ? "No matching cases found." : "No test projects yet"}
       </div>
     );
   }

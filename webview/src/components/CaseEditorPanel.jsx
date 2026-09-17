@@ -86,6 +86,8 @@ function CaseEditorPanel({
   onOpenStorageSyncSettings,
   manualSave = false,
   gitProfileVersion = 0,
+  emptyTitle = "Select a test case from the list",
+  emptyDescription = "or create a new one",
 }) {
   const [caseId, setCaseId] = useState("");
   const [title, setTitle] = useState("");
@@ -430,8 +432,8 @@ function CaseEditorPanel({
       <DetailPanel>
         <DetailPanelEmpty
           iconComponent={FilePlus2}
-          title="Select a test case from the list"
-          description="or create a new one"
+          title={emptyTitle}
+          description={emptyDescription}
           action={
             !editorLocked && directory ? (
               <button

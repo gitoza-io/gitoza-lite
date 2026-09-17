@@ -124,7 +124,7 @@ function SidebarTree({
   if (!tree?.length) {
     return (
       <div className="py-4 text-center text-sm text-slate-600 dark:text-slate-400">
-        No test suites in repository.
+        No test projects yet.
       </div>
     );
   }

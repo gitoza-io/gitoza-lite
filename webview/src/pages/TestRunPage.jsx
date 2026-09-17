@@ -9,10 +9,8 @@ import DetailPanelLoading from "../components/DetailPanelLoading";
 import AddRunCasesModal from "../components/AddRunCasesModal";
 import UnsavedChangesDialog from "../components/UnsavedChangesDialog";
 import ContextMenu from "../components/ContextMenu";
-import InlineRenameInput from "../components/InlineRenameInput";
 import TitleBarAddButton from "../components/TitleBarAddButton";
 import { useConfirm } from "../components/ConfirmProvider";
-import { RUNS_ROOT } from "../constants/runPaths";
 import { useRunResultDraft } from "../hooks/useRunResultDraft";
 import { useRunBrowseState } from "../hooks/useRunBrowseState";
 import {
@@ -27,7 +25,7 @@ import {
   saveRunResults,
 } from "../services/api";
 import { onCasesUpdated, onRunsUpdated } from "../api/vscodeApi";
-import { TestCaseIcon, TestRunIcon } from "../components/TestEntityIcons";
+import { TestCaseIcon } from "../components/TestEntityIcons";
 import { countResultsFromCases } from "../utils/applyPendingRunResults";
 import { browseColumnNoSelect } from "../utils/layoutClasses";
 import {
@@ -470,38 +468,6 @@ export default function TestRunPage({
     guardUnsaved(() => setShowAddCasesModal(true));
   }, [guardUnsaved]);
 
-  if (!hasRunsRoot) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center bg-slate-50 px-6 text-center dark:bg-slate-950">
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-          Initialize test runs
-        </h1>
-        <p className="mt-2 max-w-md text-sm text-slate-600 dark:text-slate-400">
-          No <code className="rounded bg-slate-200 px-1 dark:bg-slate-700">{RUNS_ROOT}</code>{" "}
-          folder found. Create your first run to get started.
-        </p>
-        {creatingRun ? (
-          <div className="mt-6 flex w-full max-w-xs items-center gap-2">
-            <TestRunIcon className="h-4 w-4 shrink-0 text-emerald-500 dark:text-emerald-400" />
-            <InlineRenameInput
-              initialValue=""
-              placeholder="Run name…"
-              onCommit={handleCommitCreateRun}
-            />
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setCreatingRun(true)}
-            className="mt-6 rounded-ui bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-          >
-            Create first run
-          </button>
-        )}
-      </div>
-    );
-  }
-
   const selectedRun = displayRuns.find((r) => r.run_id === selectedRunId);
   const listTitle = folderLabel ?? selectedRun?.title ?? selectedRun?.run_id ?? null;
 
@@ -525,6 +491,7 @@ export default function TestRunPage({
               onExpandedChange={setFolderExpanded}
               creatingRun={creatingRun}
               onCommitCreateRun={handleCommitCreateRun}
+              emptyMessage="No test runs yet"
               onContextMenuRun={(node, e) => {
                 if (!node?.run_id) return;
                 e.preventDefault();
@@ -564,7 +531,7 @@ export default function TestRunPage({
                   disabled={!selectedRunId || !hasCasesRoot}
                   title={
                     !hasCasesRoot
-                      ? "Initialize the test repository before adding cases"
+                      ? "Create a test project before adding cases"
                       : "Add cases from repository"
                   }
                   onClick={openAddCasesModal}
@@ -611,13 +578,23 @@ export default function TestRunPage({
             ) : (
               <DetailPanelEmpty
                 iconComponent={TestCaseIcon}
-                title={selectedCasePath ? "Case not found" : "Select a case"}
+                title={
+                  selectedCasePath
+                    ? "Case not found"
+                    : !displayRuns.length
+                      ? "Create a run to get started"
+                      : selectedRunId
+                        ? "Select a case"
+                        : "Select a run"
+                }
                 description={
                   selectedCasePath
                     ? "The case file may have been moved or deleted."
-                    : selectedRunId
-                      ? "Choose a case from the list to view its details."
-                      : "Select a run, then a case."
+                    : !displayRuns.length
+                      ? "Use + to create a run"
+                      : selectedRunId
+                        ? "Choose a case from the list to view its details."
+                        : "Select a run, then a case."
                 }
               />
             )}

@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TestRepository from "./TestRepository";
-import CreateProjectModal from "../components/CreateProjectModal";
 import { useConfirm } from "../components/ConfirmProvider";
-import { CASES_ROOT } from "../constants/casePaths";
 import {
   createFolder,
   createProject,
@@ -46,7 +44,6 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
   const [isEditingCase, setIsEditingCase] = useState(false);
   const [showCreateFormInPanel, setShowCreateFormInPanel] = useState(false);
   const [creatingProject, setCreatingProject] = useState(false);
-  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [filterOptions, setFilterOptions] = useState({});
   const caseListWindowRef = useRef(null);
 
@@ -171,7 +168,6 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
       }
       await createProject(sanitized, ACTIVE_REPO);
       await loadData();
-      setShowCreateProjectModal(false);
       setCreatingProject(false);
       if (!hasCasesRoot) {
         onCasesRootInitialized?.();
@@ -439,36 +435,6 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
     [appendRunWarning, clearSelectionUnderPath, confirm, loadData],
   );
 
-  if (!hasCasesRoot) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center bg-slate-50 px-6 text-center dark:bg-slate-950">
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-          Initialize test repository
-        </h1>
-        <p className="mt-2 max-w-md text-sm text-slate-600 dark:text-slate-400">
-          No <code className="rounded bg-slate-200 px-1 dark:bg-slate-700">{CASES_ROOT}</code>{" "}
-          folder found in this workspace. Create your first project to get started.
-        </p>
-        <button
-          type="button"
-          onClick={() => setShowCreateProjectModal(true)}
-          className="mt-6 rounded-ui bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          Create first project
-        </button>
-        {showCreateProjectModal ? (
-          <CreateProjectModal
-            onSubmit={async (name) => {
-              await initializeCasesRoot();
-              await handleCreateProject(name);
-            }}
-            onClose={() => setShowCreateProjectModal(false)}
-          />
-        ) : null}
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <TestRepository
@@ -513,12 +479,6 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
         onDeleteFolder={handleDeleteFolder}
         onDeleteProject={handleDeleteProject}
       />
-      {showCreateProjectModal ? (
-        <CreateProjectModal
-          onSubmit={handleCreateProject}
-          onClose={() => setShowCreateProjectModal(false)}
-        />
-      ) : null}
     </div>
   );
 }
