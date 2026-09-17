@@ -64,9 +64,6 @@ function TicketDetailView({ ticket, ticketIdRowExtra = null }) {
           {ticket.reporter ? (
             <MetadataFieldRead label="Reporter" value={ticket.reporter} />
           ) : null}
-          {ticket.sprint ? (
-            <MetadataFieldRead label="Sprint" value={ticket.sprint} />
-          ) : null}
           {ticket.release ? (
             <MetadataFieldRead label="Release" value={ticket.release} />
           ) : null}

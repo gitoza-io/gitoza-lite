@@ -48,7 +48,6 @@ function TicketEditorPanel({
   const [priority, setPriority] = useState("medium");
   const [assignedTo, setAssignedTo] = useState("");
   const [reporter, setReporter] = useState("");
-  const [sprint, setSprint] = useState("");
   const [release, setRelease] = useState("");
   const [tagsStr, setTagsStr] = useState("");
   const [tagInput, setTagInput] = useState("");
@@ -87,7 +86,6 @@ function TicketEditorPanel({
     setPriority((ticketDetail.priority || "medium").toLowerCase());
     setAssignedTo(ticketDetail.assigned_to ?? "");
     setReporter(ticketDetail.reporter ?? "");
-    setSprint(ticketDetail.sprint ?? "");
     setRelease(ticketDetail.release ?? "");
     setTagsStr(Array.isArray(ticketDetail.tags) ? ticketDetail.tags.join(", ") : "");
     setParams(ticketDetail.params ?? {});
@@ -158,7 +156,6 @@ function TicketEditorPanel({
       priority,
       assignedTo,
       reporter,
-      sprint,
       release,
       tagsStr,
       params,
@@ -171,7 +168,6 @@ function TicketEditorPanel({
       priority,
       assignedTo,
       reporter,
-      sprint,
       release,
       tagsStr,
       params,
@@ -187,7 +183,6 @@ function TicketEditorPanel({
       priority: d.priority,
       assigned_to: (d.assignedTo || "").trim(),
       reporter: (d.reporter || "").trim(),
-      sprint: (d.sprint || "").trim(),
       release: (d.release || "").trim(),
       tags: (d.tagsStr || "")
         .split(",")
@@ -361,15 +356,6 @@ function TicketEditorPanel({
             type="text"
             value={reporter}
             onChange={(e) => setReporter(e.target.value)}
-            placeholder="—"
-            className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS}`}
-          />
-        </MetadataFieldEdit>
-        <MetadataFieldEdit label="Sprint">
-          <input
-            type="text"
-            value={sprint}
-            onChange={(e) => setSprint(e.target.value)}
             placeholder="—"
             className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS}`}
           />

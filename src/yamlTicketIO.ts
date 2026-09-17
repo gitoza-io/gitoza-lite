@@ -134,7 +134,6 @@ export function parseTicketYaml(
     assigned_to:
       lower.assigned_to != null ? String(lower.assigned_to) : undefined,
     reporter: lower.reporter != null ? String(lower.reporter) : undefined,
-    sprint: lower.sprint != null ? String(lower.sprint) : undefined,
     release: lower.release != null ? String(lower.release) : undefined,
     params: parseParams(lower.params),
     file_path: filePath.replace(/\\/g, "/"),
@@ -174,9 +173,6 @@ export function detailToTicketFrontMatter(
   }
   if (detail.reporter?.trim()) {
     fm.reporter = detail.reporter.trim();
-  }
-  if (detail.sprint?.trim()) {
-    fm.sprint = detail.sprint.trim();
   }
   if (detail.release?.trim()) {
     fm.release = detail.release.trim();

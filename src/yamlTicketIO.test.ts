@@ -57,7 +57,6 @@ title: Only title
       priority: "medium",
       assigned_to: "bob",
       reporter: "carol",
-      sprint: "s1",
       release: "demo/1.0",
       params: { area: "api" },
       file_path: ".gitoza-lite/tasks/tickets/demo/DEMO-1.yaml",

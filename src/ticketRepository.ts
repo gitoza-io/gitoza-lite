@@ -196,7 +196,6 @@ export class TicketRepository {
           priority: parsed.priority,
           assigned_to: parsed.assigned_to,
           reporter: parsed.reporter,
-          sprint: parsed.sprint,
           release: parsed.release,
           file_path: rel,
           project: parsed.project,
@@ -280,7 +279,6 @@ export class TicketRepository {
       priority: payload.priority?.trim().toLowerCase() || "medium",
       assigned_to: payload.assigned_to?.trim() || undefined,
       reporter: payload.reporter?.trim() || undefined,
-      sprint: payload.sprint?.trim() || undefined,
       release: payload.release?.trim() || undefined,
       params: payload.params ?? {},
       file_path: fileRel,
@@ -325,7 +323,6 @@ export class TicketRepository {
           : existing.assigned_to,
       reporter:
         payload.reporter !== undefined ? payload.reporter : existing.reporter,
-      sprint: payload.sprint !== undefined ? payload.sprint : existing.sprint,
       release:
         payload.release !== undefined ? payload.release : existing.release,
       params: payload.params !== undefined ? payload.params : existing.params,

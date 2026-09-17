@@ -142,7 +142,6 @@ export interface YamlTicketDetail {
   priority?: string;
   assigned_to?: string;
   reporter?: string;
-  sprint?: string;
   release?: string;
   params: Record<string, string>;
   file_path: string;
@@ -159,7 +158,6 @@ export interface YamlTicketListItem {
   priority?: string;
   assigned_to?: string;
   reporter?: string;
-  sprint?: string;
   release?: string;
   file_path: string;
   project?: string;
@@ -188,7 +186,6 @@ export interface CreateTicketPayload {
   body?: string;
   assigned_to?: string;
   reporter?: string;
-  sprint?: string;
   release?: string;
   params?: Record<string, string>;
 }
@@ -202,7 +199,6 @@ export interface UpdateTicketPayload {
   body?: string;
   assigned_to?: string;
   reporter?: string;
-  sprint?: string;
   release?: string;
   params?: Record<string, string>;
 }
