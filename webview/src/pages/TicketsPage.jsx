@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Box, ChevronDown, ChevronRight, FilePlus2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Box,
+  ChevronDown,
+  ChevronRight,
+  FilePlus2,
+  Inbox,
+  ListChecks,
+  OctagonAlert,
+} from "lucide-react";
 import CaseRowLabel from "../components/CaseRowLabel";
 import ConfirmChangesTwoColumnLayout from "../components/ConfirmChangesTwoColumnLayout";
 import ContextMenu from "../components/ContextMenu";
@@ -21,6 +30,7 @@ import SidebarSection, {
 } from "../components/SidebarSection";
 import { TreeAreaHoverProvider } from "../contexts/TreeAreaHoverContext";
 import { ticketSearchKeys } from "../constants/searchKeys";
+import { TOOLBAR_BTN_SELECTED } from "../constants/toolbarStyles";
 import { usePinnedProjects } from "../hooks/usePinnedProjects";
 import {
   createTicket,
@@ -42,6 +52,35 @@ import {
   collectTicketFilterOptions,
   itemMatchesSearchChips,
 } from "../utils/querySearch";
+import {
+  countTicketQuickFilters,
+  ticketMatchesQuickFilter,
+  toggleTicketQuickFilter,
+} from "../utils/ticketQuickFilter";
+
+const QUICK_FILTER_BTN =
+  "inline-flex h-7 items-center gap-1 rounded-ui px-1.5 text-muted hover:bg-list-hover hover:text-ink dark:hover:bg-slate-700 dark:hover:text-slate-300";
+
+const QUICK_FILTER_CONTROLS = [
+  {
+    id: "open",
+    label: "Open",
+    Icon: Inbox,
+    iconClass: "text-blue-500 dark:text-blue-400",
+  },
+  {
+    id: "blocked",
+    label: "Blocked",
+    Icon: OctagonAlert,
+    iconClass: "text-red-500 dark:text-red-400",
+  },
+  {
+    id: "backlog",
+    label: "Backlog (no release)",
+    Icon: ListChecks,
+    iconClass: "text-slate-500 dark:text-slate-400",
+  },
+];
 
 const TICKET_QUERY_FIELDS = ["ticket_id", "title"];
 const TICKET_SEARCH_KEYS = ticketSearchKeys();
@@ -63,6 +102,8 @@ export default function TicketsPage({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchChips, setSearchChips] = useState([]);
   const [openedProjectName, setOpenedProjectName] = useState(null);
+  /** @type {[null | "open" | "blocked" | "backlog", function]} */
+  const [quickFilter, setQuickFilter] = useState(null);
 
   const reload = useCallback(async () => {
     setError(null);
@@ -129,18 +170,33 @@ export default function TicketsPage({
   }, [tickets]);
 
   const searchActive = searchOpen && searchChips.length > 0;
+  const projectFocusActive = Boolean(openedProjectName);
+  const listFilterActive = searchActive || Boolean(quickFilter);
 
   const ticketFilterOptions = useMemo(
     () => collectTicketFilterOptions(tickets),
     [tickets],
   );
 
-  const filteredTicketsByProject = useMemo(() => {
+  const searchFilteredByProject = useMemo(() => {
     if (!searchActive) return ticketsByProject;
     return filterGroupedMap(ticketsByProject, (t) =>
       itemMatchesSearchChips(t, searchChips, { queryFields: TICKET_QUERY_FIELDS }),
     );
   }, [ticketsByProject, searchActive, searchChips]);
+
+  const filteredTicketsByProject = useMemo(() => {
+    if (!quickFilter) return searchFilteredByProject;
+    return filterGroupedMap(searchFilteredByProject, (t) =>
+      ticketMatchesQuickFilter(t, quickFilter),
+    );
+  }, [searchFilteredByProject, quickFilter]);
+
+  const quickFilterCounts = useMemo(() => {
+    if (!openedProjectName) return { open: 0, blocked: 0, backlog: 0 };
+    const list = searchFilteredByProject.get(openedProjectName) || [];
+    return countTicketQuickFilters(list);
+  }, [openedProjectName, searchFilteredByProject]);
 
   const pinTree = useMemo(() => ticketProjectsToPinTree(projects), [projects]);
   const { pinnedProjectPaths, isPinned, togglePin } = usePinnedProjects(
@@ -150,20 +206,23 @@ export default function TicketsPage({
 
   const visibleProjects = useMemo(() => {
     const base = searchActive
-      ? projects.filter((p) => filteredTicketsByProject.has(p.name))
+      ? projects.filter((p) => searchFilteredByProject.has(p.name))
       : projects;
     const pinned = sortProjectsWithPins(base, pinnedProjectPaths);
     return filterProjectsToOpenedName(pinned, openedProjectName);
   }, [
     projects,
     searchActive,
-    filteredTicketsByProject,
+    searchFilteredByProject,
     pinnedProjectPaths,
     openedProjectName,
   ]);
 
   useEffect(() => {
-    if (!openedProjectName) return;
+    if (!openedProjectName) {
+      setQuickFilter(null);
+      return;
+    }
     if (!projects.some((p) => p.name === openedProjectName)) {
       setOpenedProjectName(null);
     }
@@ -174,7 +233,7 @@ export default function TicketsPage({
     setExpanded((prev) => {
       const next = new Set(prev);
       let changed = false;
-      for (const name of filteredTicketsByProject.keys()) {
+      for (const name of searchFilteredByProject.keys()) {
         if (!next.has(name)) {
           next.add(name);
           changed = true;
@@ -182,7 +241,7 @@ export default function TicketsPage({
       }
       return changed ? next : prev;
     });
-  }, [searchActive, filteredTicketsByProject]);
+  }, [searchActive, searchFilteredByProject]);
 
   const handleSearchClick = useCallback(() => {
     if (searchOpen) {
@@ -192,6 +251,10 @@ export default function TicketsPage({
       setSearchOpen(true);
     }
   }, [searchOpen]);
+
+  const handleQuickFilterClick = useCallback((id) => {
+    setQuickFilter((prev) => toggleTicketQuickFilter(prev, id));
+  }, []);
 
   const ensureRoot = async () => {
     await initializeTicketsRoot();
@@ -286,6 +349,7 @@ export default function TicketsPage({
   const handleCloseOpenedProject = useCallback(() => {
     const name = openedProjectName;
     setOpenedProjectName(null);
+    setQuickFilter(null);
     if (name) {
       setExpanded((prev) => {
         if (!prev.has(name)) return prev;
@@ -296,6 +360,48 @@ export default function TicketsPage({
     }
   }, [openedProjectName]);
 
+  const quickFilterToolbar = projectFocusActive ? (
+    <div className="flex items-center gap-0.5">
+      {QUICK_FILTER_CONTROLS.map(({ id, label, Icon, iconClass }, index) => {
+        const selected = quickFilter === id;
+        const count = quickFilterCounts[id] ?? 0;
+        return (
+          <span key={id} className="inline-flex items-center gap-0.5">
+            {index === 2 ? (
+              <span
+                className="mx-0.5 h-4 w-px shrink-0 bg-slate-200 dark:bg-slate-600"
+                aria-hidden
+              />
+            ) : null}
+            <Tooltip label={label} placement="bottom">
+              <button
+                type="button"
+                onClick={() => handleQuickFilterClick(id)}
+                className={`${QUICK_FILTER_BTN} ${selected ? TOOLBAR_BTN_SELECTED : ""}`}
+                aria-label={label}
+                aria-pressed={selected}
+              >
+                <Icon className={`h-4 w-4 shrink-0 ${iconClass}`} aria-hidden />
+                <span className="text-xs font-medium tabular-nums leading-none text-slate-600 dark:text-slate-300">
+                  {count}
+                </span>
+              </button>
+            </Tooltip>
+          </span>
+        );
+      })}
+    </div>
+  ) : null;
+
+  const searchToggle = (
+    <SearchToggleButton
+      isOpen={searchOpen}
+      hasActiveChips={searchActive}
+      onClick={handleSearchClick}
+      ariaLabelWhenClosed="Search tickets"
+    />
+  );
+
   const listColumn = (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-slate-200 px-2 py-2 dark:border-slate-700">
@@ -304,19 +410,23 @@ export default function TicketsPage({
           toolbar={
             <TreeToolbar
               addButton={
-                <TitleBarAddButton
-                  tooltip="Create project"
-                  onClick={() => setCreatingProject(true)}
-                  ariaLabel="Create project"
-                />
+                projectFocusActive ? null : (
+                  <TitleBarAddButton
+                    tooltip="Create project"
+                    onClick={() => setCreatingProject(true)}
+                    ariaLabel="Create project"
+                  />
+                )
               }
               searchNode={
-                <SearchToggleButton
-                  isOpen={searchOpen}
-                  hasActiveChips={searchActive}
-                  onClick={handleSearchClick}
-                  ariaLabelWhenClosed="Search tickets"
-                />
+                projectFocusActive ? (
+                  <div className="flex items-center gap-0.5">
+                    {quickFilterToolbar}
+                    {searchToggle}
+                  </div>
+                ) : (
+                  searchToggle
+                )
               }
             />
           }
@@ -362,7 +472,8 @@ export default function TicketsPage({
             <div className="px-2 py-4 text-center text-sm text-slate-400">
               No ticket projects yet
             </div>
-          ) : searchActive && visibleProjects.length === 0 ? (
+          ) : listFilterActive &&
+            visibleProjects.length === 0 ? (
             <div className="px-2 py-4 text-center text-sm text-slate-400">
               No matching tickets
             </div>
@@ -372,6 +483,11 @@ export default function TicketsPage({
                 const projectFocusActive = openedProjectName === p.name;
                 const isOpen = projectFocusActive || expanded.has(p.name);
                 const projectTickets = filteredTicketsByProject.get(p.name) || [];
+                const projectTicketCount = (
+                  searchFilteredByProject.get(p.name) ||
+                  ticketsByProject.get(p.name) ||
+                  []
+                ).length;
                 const projectSelected =
                   selectedProject === p.name && !selectedPath;
                 const rowSurfaceClass = projectFocusActive
@@ -471,7 +587,7 @@ export default function TicketsPage({
                               />
                             ) : null}
                             <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                              {projectTickets.length}
+                              {projectTicketCount}
                             </span>
                           </span>
                         </div>
@@ -536,7 +652,7 @@ export default function TicketsPage({
                                   paddingLeft: `${TREE_ROW_CONTENT_GAP}px`,
                                 }}
                               >
-                                No tickets
+                                {listFilterActive ? "No matching tickets" : "No tickets"}
                               </div>
                             </div>
                           </li>

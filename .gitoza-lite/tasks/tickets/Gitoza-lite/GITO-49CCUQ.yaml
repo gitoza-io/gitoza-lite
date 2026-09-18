@@ -1,0 +1,17 @@
+---
+title: Project-focus open/blocked/backlog quick filters
+type: task
+status: done
+priority: medium
+---
+
+## Summary
+
+When a ticket project is opened, the toolbar shows Open, Blocked, and Backlog (no release) count toggles plus Search. Active filter is indicated by icon highlight only—no under-bar status badge. Click again to clear and show all.
+
+## Details
+
+- Project list toolbar stays add + search.
+- Filters are exclusive; search chips AND with the quick filter.
+- Leaving the project clears the quick filter.
+- Counts stay visible next to icons and remain stable while a filter is active.

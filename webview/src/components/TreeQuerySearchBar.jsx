@@ -177,7 +177,7 @@ function TreeQuerySearchBar({
   const hasActive = Boolean(draft.trim() || chips?.length);
 
   return (
-    <div className="flex flex-col gap-1.5 border-b border-slate-200 px-2 py-2 dark:border-slate-700">
+    <div className="relative z-30 flex flex-col gap-1.5 border-b border-slate-200 px-2 py-2 dark:border-slate-700">
       <div className="relative">
         <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
         <input
@@ -209,7 +209,7 @@ function TreeQuerySearchBar({
           <ul
             ref={listRef}
             role="listbox"
-            className="absolute left-0 right-0 top-full z-20 mt-0.5 max-h-40 overflow-y-auto rounded border border-slate-200 bg-white py-0.5 shadow-md dark:border-slate-600 dark:bg-slate-800"
+            className="absolute left-0 right-0 top-full z-30 mt-0.5 max-h-40 overflow-y-auto rounded border border-slate-200 bg-white py-0.5 shadow-md dark:border-slate-600 dark:bg-slate-800"
           >
             {suggestions.map((item, idx) => {
               const label = item.label || item.value || item.key;
