@@ -1,5 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Box, ChevronDown, ChevronRight, FilePlus2, Rocket } from "lucide-react";
+import {
+  ArrowLeft,
+  Box,
+  ChevronDown,
+  ChevronRight,
+  CircleCheck,
+  CircleSlash,
+  FilePlus2,
+  FlaskConical,
+  Inbox,
+  OctagonAlert,
+  Rocket,
+  Ship,
+  Timer,
+} from "lucide-react";
 import CaseRowLabel from "../components/CaseRowLabel";
 import ConfirmChangesTwoColumnLayout from "../components/ConfirmChangesTwoColumnLayout";
 import ContextMenu from "../components/ContextMenu";
@@ -21,7 +35,8 @@ import SidebarSection, {
   treeRowSelectedFullWidthClass,
 } from "../components/SidebarSection";
 import { TreeAreaHoverProvider } from "../contexts/TreeAreaHoverContext";
-import { releaseSearchKeys } from "../constants/searchKeys";
+import { ticketSearchKeys } from "../constants/searchKeys";
+import { TOOLBAR_BTN_SELECTED } from "../constants/toolbarStyles";
 import { usePinnedProjects } from "../hooks/usePinnedProjects";
 import {
   createRelease,
@@ -42,10 +57,107 @@ import {
   ticketProjectsToPinTree,
 } from "../utils/folderTreePins";
 import { filterProjectsToOpenedName } from "../utils/openFocusTreeFilter";
-import { itemMatchesSearchChips } from "../utils/querySearch";
+import {
+  collectTicketFilterOptions,
+  itemMatchesSearchChips,
+} from "../utils/querySearch";
+import {
+  countReleaseQuickFilters,
+  releaseMatchesQuickFilter,
+  toggleReleaseQuickFilter,
+} from "../utils/releaseQuickFilter";
+import {
+  countReleaseTicketQuickFilters,
+  releaseTicketMatchesQuickFilter,
+  toggleReleaseTicketQuickFilter,
+} from "../utils/releaseTicketQuickFilter";
 
-const RELEASE_QUERY_FIELDS = ["release_id", "name"];
-const RELEASE_SEARCH_KEYS = releaseSearchKeys();
+const TICKET_QUERY_FIELDS = ["ticket_id", "title"];
+const TICKET_SEARCH_KEYS = ticketSearchKeys();
+
+const QUICK_FILTER_BTN =
+  "inline-flex h-7 items-center gap-1 rounded-ui px-1.5 text-muted hover:bg-list-hover hover:text-ink dark:hover:bg-slate-700 dark:hover:text-slate-300";
+
+const RELEASE_STATUS_FILTERS = [
+  {
+    id: "open",
+    label: "Open",
+    Icon: Inbox,
+    iconClass: "text-blue-500 dark:text-blue-400",
+  },
+  {
+    id: "shipped",
+    label: "Shipped",
+    Icon: Ship,
+    iconClass: "text-emerald-500 dark:text-emerald-400",
+  },
+  {
+    id: "cancelled",
+    label: "Cancelled",
+    Icon: CircleSlash,
+    iconClass: "text-slate-500 dark:text-slate-400",
+  },
+];
+
+const RELEASE_TICKET_STATUS_FILTERS = [
+  {
+    id: "open",
+    label: "Open",
+    Icon: Inbox,
+    iconClass: "text-blue-500 dark:text-blue-400",
+  },
+  {
+    id: "in_progress",
+    label: "In progress",
+    Icon: Timer,
+    iconClass: "text-amber-500 dark:text-amber-400",
+  },
+  {
+    id: "in_testing",
+    label: "In testing",
+    Icon: FlaskConical,
+    iconClass: "text-violet-500 dark:text-violet-400",
+  },
+  {
+    id: "blocked",
+    label: "Blocked",
+    Icon: OctagonAlert,
+    iconClass: "text-red-500 dark:text-red-400",
+  },
+  {
+    id: "done",
+    label: "Done",
+    Icon: CircleCheck,
+    iconClass: "text-emerald-500 dark:text-emerald-400",
+  },
+];
+
+function QuickFilterButtons({ controls, counts, activeId, onToggle }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {controls.map(({ id, label, Icon, iconClass }) => {
+        const selected = activeId === id;
+        const count = counts[id] ?? 0;
+        return (
+          <Tooltip key={id} label={label} placement="bottom">
+            <button
+              type="button"
+              onClick={() => onToggle(id)}
+              className={`${QUICK_FILTER_BTN} ${selected ? TOOLBAR_BTN_SELECTED : ""}`}
+              aria-label={label}
+              aria-pressed={selected}
+            >
+              <Icon className={`h-4 w-4 shrink-0 ${iconClass}`} aria-hidden />
+              <span className="text-xs font-medium tabular-nums leading-none text-slate-600 dark:text-slate-300">
+                {count}
+              </span>
+            </button>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function ReleasesPage({
   hasTicketsRoot,
@@ -71,6 +183,10 @@ export default function ReleasesPage({
   const [searchChips, setSearchChips] = useState([]);
   const [openedProjectName, setOpenedProjectName] = useState(null);
   const [openedReleaseId, setOpenedReleaseId] = useState(null);
+  /** @type {[null | "open" | "shipped" | "cancelled", function]} */
+  const [releaseQuickFilter, setReleaseQuickFilter] = useState(null);
+  /** @type {[null | "open" | "in_progress" | "in_testing" | "blocked" | "done", function]} */
+  const [ticketQuickFilter, setTicketQuickFilter] = useState(null);
 
   const reload = useCallback(async () => {
     setError(null);
@@ -179,14 +295,53 @@ export default function ReleasesPage({
     return map;
   }, [tickets]);
 
-  const searchActive = searchOpen && searchChips.length > 0;
+  const releaseFocusActive = Boolean(openedReleaseId);
+  const projectListMode = !openedProjectName && !openedReleaseId;
+  const searchActive = releaseFocusActive && searchOpen && searchChips.length > 0;
+
+  const ticketFilterOptions = useMemo(
+    () => collectTicketFilterOptions(tickets),
+    [tickets],
+  );
 
   const filteredReleasesByProject = useMemo(() => {
-    if (!searchActive) return releasesByProject;
+    if (releaseFocusActive || !releaseQuickFilter) return releasesByProject;
     return filterGroupedMap(releasesByProject, (r) =>
-      itemMatchesSearchChips(r, searchChips, { queryFields: RELEASE_QUERY_FIELDS }),
+      releaseMatchesQuickFilter(r, releaseQuickFilter),
     );
-  }, [releasesByProject, searchActive, searchChips]);
+  }, [releasesByProject, releaseFocusActive, releaseQuickFilter]);
+
+  const releaseQuickFilterCounts = useMemo(() => {
+    if (releaseFocusActive) return { open: 0, shipped: 0, cancelled: 0 };
+    const pool = openedProjectName
+      ? releasesByProject.get(openedProjectName) || []
+      : releases;
+    return countReleaseQuickFilters(pool);
+  }, [releaseFocusActive, openedProjectName, releasesByProject, releases]);
+
+  const openedReleaseTickets = useMemo(() => {
+    if (!openedReleaseId) return [];
+    return ticketsByReleaseId.get(openedReleaseId) || [];
+  }, [openedReleaseId, ticketsByReleaseId]);
+
+  const searchFilteredReleaseTickets = useMemo(() => {
+    if (!searchActive) return openedReleaseTickets;
+    return openedReleaseTickets.filter((t) =>
+      itemMatchesSearchChips(t, searchChips, { queryFields: TICKET_QUERY_FIELDS }),
+    );
+  }, [openedReleaseTickets, searchActive, searchChips]);
+
+  const filteredReleaseTickets = useMemo(() => {
+    if (!ticketQuickFilter) return searchFilteredReleaseTickets;
+    return searchFilteredReleaseTickets.filter((t) =>
+      releaseTicketMatchesQuickFilter(t, ticketQuickFilter),
+    );
+  }, [searchFilteredReleaseTickets, ticketQuickFilter]);
+
+  const ticketQuickFilterCounts = useMemo(
+    () => countReleaseTicketQuickFilters(searchFilteredReleaseTickets),
+    [searchFilteredReleaseTickets],
+  );
 
   const pinTree = useMemo(() => ticketProjectsToPinTree(projects), [projects]);
   const { pinnedProjectPaths, isPinned, togglePin } = usePinnedProjects(
@@ -194,22 +349,30 @@ export default function ReleasesPage({
     pinTree,
   );
 
+  const releaseFilterActive = Boolean(releaseQuickFilter) && !releaseFocusActive;
+  const listFilterActive =
+    releaseFilterActive || searchActive || Boolean(ticketQuickFilter);
+
   const visibleProjects = useMemo(() => {
-    const base = searchActive
+    const base = releaseFilterActive
       ? projects.filter((p) => filteredReleasesByProject.has(p.name))
       : projects;
     const pinned = sortProjectsWithPins(base, pinnedProjectPaths);
     return filterProjectsToOpenedName(pinned, openedProjectName);
   }, [
     projects,
-    searchActive,
+    releaseFilterActive,
     filteredReleasesByProject,
     pinnedProjectPaths,
     openedProjectName,
   ]);
 
   useEffect(() => {
-    if (!openedProjectName) return;
+    if (!openedProjectName) {
+      setOpenedReleaseId(null);
+      setTicketQuickFilter(null);
+      return;
+    }
     if (!projects.some((p) => p.name === openedProjectName)) {
       setOpenedProjectName(null);
       setOpenedReleaseId(null);
@@ -217,26 +380,16 @@ export default function ReleasesPage({
   }, [openedProjectName, projects]);
 
   useEffect(() => {
-    if (!openedReleaseId) return;
+    if (!openedReleaseId) {
+      setTicketQuickFilter(null);
+      setSearchOpen(false);
+      setSearchChips([]);
+      return;
+    }
     if (!releases.some((r) => r.release_id === openedReleaseId)) {
       setOpenedReleaseId(null);
     }
   }, [openedReleaseId, releases]);
-
-  useEffect(() => {
-    if (!searchActive) return;
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      let changed = false;
-      for (const name of filteredReleasesByProject.keys()) {
-        if (!next.has(name)) {
-          next.add(name);
-          changed = true;
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [searchActive, filteredReleasesByProject]);
 
   const handleSearchClick = useCallback(() => {
     if (searchOpen) {
@@ -246,6 +399,14 @@ export default function ReleasesPage({
       setSearchOpen(true);
     }
   }, [searchOpen]);
+
+  const handleReleaseQuickFilterClick = useCallback((id) => {
+    setReleaseQuickFilter((prev) => toggleReleaseQuickFilter(prev, id));
+  }, []);
+
+  const handleTicketQuickFilterClick = useCallback((id) => {
+    setTicketQuickFilter((prev) => toggleReleaseTicketQuickFilter(prev, id));
+  }, []);
 
   const ensureRoot = async () => {
     await initializeTicketsRoot();
@@ -378,6 +539,9 @@ export default function ReleasesPage({
     if (!name) return;
     setOpenedProjectName(name);
     setOpenedReleaseId(null);
+    setTicketQuickFilter(null);
+    setSearchOpen(false);
+    setSearchChips([]);
     setSelectedProject(name);
     clearDetailSelection();
     setCreatingReleaseInProject(null);
@@ -388,6 +552,9 @@ export default function ReleasesPage({
     const name = openedProjectName;
     setOpenedProjectName(null);
     setOpenedReleaseId(null);
+    setTicketQuickFilter(null);
+    setSearchOpen(false);
+    setSearchChips([]);
     if (name) {
       setExpanded((prev) => {
         if (!prev.has(name)) return prev;
@@ -402,6 +569,10 @@ export default function ReleasesPage({
     if (!projectName || !release?.release_id) return;
     setOpenedProjectName(projectName);
     setOpenedReleaseId(release.release_id);
+    setReleaseQuickFilter(null);
+    setTicketQuickFilter(null);
+    setSearchOpen(false);
+    setSearchChips([]);
     setSelectedProject(projectName);
     setCreatingReleaseInProject(null);
     setSelectedTicketPath(null);
@@ -415,6 +586,9 @@ export default function ReleasesPage({
   const handleCloseOpenedRelease = useCallback(() => {
     const releaseId = openedReleaseId;
     setOpenedReleaseId(null);
+    setTicketQuickFilter(null);
+    setSearchOpen(false);
+    setSearchChips([]);
     if (releaseId) {
       setExpandedReleases((prev) => {
         if (!prev.has(releaseId)) return prev;
@@ -425,6 +599,32 @@ export default function ReleasesPage({
     }
   }, [openedReleaseId]);
 
+  const releaseStatusToolbar = !releaseFocusActive ? (
+    <QuickFilterButtons
+      controls={RELEASE_STATUS_FILTERS}
+      counts={releaseQuickFilterCounts}
+      activeId={releaseQuickFilter}
+      onToggle={handleReleaseQuickFilterClick}
+    />
+  ) : null;
+
+  const ticketStatusToolbar = releaseFocusActive ? (
+    <div className="flex items-center gap-0.5">
+      <QuickFilterButtons
+        controls={RELEASE_TICKET_STATUS_FILTERS}
+        counts={ticketQuickFilterCounts}
+        activeId={ticketQuickFilter}
+        onToggle={handleTicketQuickFilterClick}
+      />
+      <SearchToggleButton
+        isOpen={searchOpen}
+        hasActiveChips={searchActive}
+        onClick={handleSearchClick}
+        ariaLabelWhenClosed="Search tickets"
+      />
+    </div>
+  ) : null;
+
   const listColumn = (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-slate-200 px-2 py-2 dark:border-slate-700">
@@ -433,33 +633,31 @@ export default function ReleasesPage({
           toolbar={
             <TreeToolbar
               addButton={
-                <TitleBarAddButton
-                  tooltip="Create project"
-                  onClick={() => {
-                    setCreatingReleaseInProject(null);
-                    setCreatingProject(true);
-                  }}
-                  ariaLabel="Create project"
-                />
+                projectListMode ? (
+                  <TitleBarAddButton
+                    tooltip="Create project"
+                    onClick={() => {
+                      setCreatingReleaseInProject(null);
+                      setCreatingProject(true);
+                    }}
+                    ariaLabel="Create project"
+                  />
+                ) : null
               }
               searchNode={
-                <SearchToggleButton
-                  isOpen={searchOpen}
-                  hasActiveChips={searchActive}
-                  onClick={handleSearchClick}
-                  ariaLabelWhenClosed="Search releases"
-                />
+                releaseFocusActive ? ticketStatusToolbar : releaseStatusToolbar
               }
             />
           }
         />
       </div>
-      {searchOpen ? (
+      {releaseFocusActive && searchOpen ? (
         <TreeQuerySearchBar
-          searchKeys={RELEASE_SEARCH_KEYS}
+          searchKeys={TICKET_SEARCH_KEYS}
+          filterOptions={ticketFilterOptions}
           chips={searchChips}
           onChipsChange={setSearchChips}
-          placeholder="status: open · free text"
+          placeholder="status: open · tag: smoke · free text"
         />
       ) : null}
       {error ? (
@@ -493,7 +691,7 @@ export default function ReleasesPage({
             <div className="px-2 py-4 text-center text-sm text-slate-400">
               No ticket projects yet
             </div>
-          ) : searchActive && visibleProjects.length === 0 ? (
+          ) : listFilterActive && visibleProjects.length === 0 ? (
             <div className="px-2 py-4 text-center text-sm text-slate-400">
               No matching releases
             </div>
@@ -508,6 +706,9 @@ export default function ReleasesPage({
                   expanded.has(p.name);
                 const allProjectReleases =
                   filteredReleasesByProject.get(p.name) || [];
+                const projectReleaseCount = (
+                  releasesByProject.get(p.name) || []
+                ).length;
                 const projectReleases = openedReleaseId
                   ? allProjectReleases.filter(
                       (r) => r.release_id === openedReleaseId,
@@ -616,7 +817,7 @@ export default function ReleasesPage({
                               />
                             ) : null}
                             <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                              {allProjectReleases.length}
+                              {projectReleaseCount}
                             </span>
                           </span>
                         </div>
@@ -653,8 +854,18 @@ export default function ReleasesPage({
                           const releaseOpen =
                             releaseFocusActive ||
                             expandedReleases.has(r.release_id);
-                          const releaseTickets =
+                          const releaseTicketsRaw =
                             ticketsByReleaseId.get(r.release_id) || [];
+                          const releaseTickets =
+                            releaseFocusActive &&
+                            openedReleaseId === r.release_id
+                              ? filteredReleaseTickets
+                              : releaseTicketsRaw;
+                          const releaseTicketCount =
+                            releaseFocusActive &&
+                            openedReleaseId === r.release_id
+                              ? openedReleaseTickets.length
+                              : releaseTicketsRaw.length;
                           const releaseSelected =
                             selectedReleasePath === r.file_path &&
                             !selectedTicketPath;
@@ -758,7 +969,7 @@ export default function ReleasesPage({
                                       />
                                     </div>
                                     <span className="ml-auto shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                                      {releaseTickets.length}
+                                      {releaseTicketCount}
                                     </span>
                                   </div>
                                 </div>
@@ -823,7 +1034,9 @@ export default function ReleasesPage({
                                             paddingLeft: `${TREE_ROW_CONTENT_GAP}px`,
                                           }}
                                         >
-                                          No tickets
+                                          {listFilterActive
+                                            ? "No matching tickets"
+                                            : "No tickets"}
                                         </div>
                                       </div>
                                     </li>
