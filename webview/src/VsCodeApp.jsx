@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Sidebar from "./components/Sidebar";
+import WebviewZoomBar from "./components/WebviewZoomBar";
 import TestRepositoryPage from "./pages/TestRepositoryPage";
 import TestRunPage from "./pages/TestRunPage";
 import TicketsPage from "./pages/TicketsPage";
@@ -9,7 +10,7 @@ import { getInitPayload, onInit, onThemeChanged, ready } from "./api/vscodeApi";
 import { useWebviewZoom } from "./hooks/useWebviewZoom";
 
 export default function VsCodeApp() {
-  useWebviewZoom();
+  const { scale, zoomIn, zoomOut, resetZoom } = useWebviewZoom();
   const [activeView, setActiveView] = useState("tickets");
   const [hasCasesRoot, setHasCasesRoot] = useState(
     () => getInitPayload()?.hasCasesRoot ?? false,
@@ -111,6 +112,12 @@ export default function VsCodeApp() {
           />
         ) : null}
       </main>
+      <WebviewZoomBar
+        scale={scale}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        onReset={resetZoom}
+      />
     </div>
   );
 }

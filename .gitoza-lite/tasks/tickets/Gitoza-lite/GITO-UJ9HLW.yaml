@@ -6,4 +6,12 @@ priority: medium
 release: Gitoza-lite/0-3-1
 ---
 
-Extend search to filter by tags and related fields beyond the current criteria.
+## Summary
+
+Extend search beyond text match so users can narrow lists by tags and related fields.
+
+## Details
+
+- Add tag filtering (and other stored fields such as type/status/priority/release where missing).
+- Combine with existing id/title query (AND across dimensions).
+- Clearing filters restores the full list.

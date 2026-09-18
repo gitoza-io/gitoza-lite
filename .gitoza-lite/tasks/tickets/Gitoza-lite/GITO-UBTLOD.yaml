@@ -6,4 +6,12 @@ priority: medium
 release: Gitoza-lite/0-3-1
 ---
 
-Remove the Save button on ticket, wiki, release, and run editors. Persist changes with a 2-second debounce after edits.
+## Summary
+
+Drop the Save button and persist edits automatically after a short pause.
+
+## Details
+
+- Editors: ticket, wiki, release, and run.
+- Debounce **2s** after the last change, then write to disk.
+- Keep leave-guards for dirty runs; surface write errors without blocking the UI.

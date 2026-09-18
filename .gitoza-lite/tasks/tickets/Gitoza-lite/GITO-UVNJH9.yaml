@@ -6,4 +6,13 @@ priority: medium
 release: Gitoza-lite/0-3-1
 ---
 
-Selecting a test run whose parent folder is collapsed leaves the tree in an inconsistent state. Expand and select should remain stable.
+## Summary
+
+Selecting a run (or nested path) while a parent folder is collapsed leaves the Test Run tree out of sync.
+
+## Details
+
+- **Repro:** collapse a parent, then click a run/child under it.
+- **Expected:** selection and expand state stay consistent.
+- **Actual:** highlight, chevrons, and browse path get flaky.
+- Likely `expanded` / `selectedFolderPath` drift in the run browse tree.
