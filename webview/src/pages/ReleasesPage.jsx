@@ -24,7 +24,6 @@ import SidebarRow from "../components/SidebarRow";
 import ReleaseEditorPanel from "../components/ReleaseEditorPanel";
 import TicketEditorPanel from "../components/TicketEditorPanel";
 import { ReleaseIcon, TicketTypeIcon } from "../components/TestEntityIcons";
-import TitleBarAddButton from "../components/TitleBarAddButton";
 import Tooltip from "../components/Tooltip";
 import TreeQuerySearchBar from "../components/TreeQuerySearchBar";
 import TreeToolbar from "../components/TreeToolbar";
@@ -296,7 +295,6 @@ export default function ReleasesPage({
   }, [tickets]);
 
   const releaseFocusActive = Boolean(openedReleaseId);
-  const projectListMode = !openedProjectName && !openedReleaseId;
   const searchActive = releaseFocusActive && searchOpen && searchChips.length > 0;
 
   const ticketFilterOptions = useMemo(
@@ -632,18 +630,7 @@ export default function ReleasesPage({
           title="Releases"
           toolbar={
             <TreeToolbar
-              addButton={
-                projectListMode ? (
-                  <TitleBarAddButton
-                    tooltip="Create project"
-                    onClick={() => {
-                      setCreatingReleaseInProject(null);
-                      setCreatingProject(true);
-                    }}
-                    ariaLabel="Create project"
-                  />
-                ) : null
-              }
+              addButton={null}
               searchNode={
                 releaseFocusActive ? ticketStatusToolbar : releaseStatusToolbar
               }
