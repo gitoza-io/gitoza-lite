@@ -41,7 +41,7 @@ import {
   filterGroupedMap,
   pruneWikiTree,
 } from "../utils/entityTreeSearch";
-import { filterTreeToOpenedNode } from "../utils/openFocusTreeFilter";
+import { filterTreeToOpenedFocusPath, filterTreeToOpenedNode } from "../utils/openFocusTreeFilter";
 import {
   collectWikiFilterOptions,
   itemMatchesSearchChips,
@@ -104,11 +104,17 @@ function WikiTreeNodes({
     <ul>
       {nodes.map((node) => {
         const dir = node.directory_path;
+        const isAncestorOfOpened =
+          Boolean(openedFolderPath) &&
+          openedFolderPath !== dir &&
+          openedFolderPath.startsWith(`${dir}/`);
         const folderFocusActive = openedFolderPath === dir;
+        const onOpenedPath = folderFocusActive || isAncestorOfOpened;
         const isCreatingHere = creatingFolderParent === dir;
         const isOpen =
-          folderFocusActive || isCreatingHere || expanded.has(dir);
-        const pages = pagesByDir.get(dir) || [];
+          onOpenedPath || isCreatingHere || expanded.has(dir);
+        const pages =
+          isAncestorOfOpened ? [] : pagesByDir.get(dir) || [];
         const folderSelected = selectedDir === dir && !selectedPath;
         const backParent = wikiParentDir(dir);
         const backLabel = backParent
@@ -163,6 +169,7 @@ function WikiTreeNodes({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (onOpenedPath) return;
                       onToggle(dir);
                     }}
                     aria-expanded={isOpen}
@@ -191,7 +198,9 @@ function WikiTreeNodes({
                     {node.display_name}
                   </span>
                   <span className="ml-auto shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                    {pages.length}
+                    {isAncestorOfOpened
+                      ? (pagesByDir.get(dir) || []).length
+                      : pages.length}
                   </span>
                 </div>
               </div>
@@ -225,47 +234,49 @@ function WikiTreeNodes({
                   onCommitCreateFolder={onCommitCreateFolder}
                   depth={depth + 1}
                 />
-                <ul>
-                  {pages.map((p) => {
-                    const isSelected = selectedPath === p.file_path;
-                    return (
-                      <li key={p.file_path}>
-                        <div
-                          className={`flex min-w-0 w-full ${
-                            isSelected
-                              ? treeRowSelectedFullWidthClass
-                              : treeRowHoverFullWidthClass
-                          }`}
-                        >
-                          <TreeRowGuides level={depth + 1} />
+                {!isAncestorOfOpened ? (
+                  <ul>
+                    {pages.map((p) => {
+                      const isSelected = selectedPath === p.file_path;
+                      return (
+                        <li key={p.file_path}>
                           <div
-                            className="flex min-w-0 flex-1 items-center gap-1"
-                            style={{
-                              paddingLeft: `${TREE_ROW_CONTENT_GAP}px`,
-                            }}
+                            className={`flex min-w-0 w-full ${
+                              isSelected
+                                ? treeRowSelectedFullWidthClass
+                                : treeRowHoverFullWidthClass
+                            }`}
                           >
-                            <div className="min-w-0 flex-1">
-                              <SidebarRow
-                                selected={isSelected}
-                                selectionOnParent
-                                icon={<WikiPageIcon />}
-                                label={
-                                  <CaseRowLabel
-                                    title={p.title}
-                                    caseId={p.page_id}
-                                  />
-                                }
-                                onClick={() =>
-                                  onSelectPage(p.file_path, dir)
-                                }
-                              />
+                            <TreeRowGuides level={depth + 1} />
+                            <div
+                              className="flex min-w-0 flex-1 items-center gap-1"
+                              style={{
+                                paddingLeft: `${TREE_ROW_CONTENT_GAP}px`,
+                              }}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <SidebarRow
+                                  selected={isSelected}
+                                  selectionOnParent
+                                  icon={<WikiPageIcon />}
+                                  label={
+                                    <CaseRowLabel
+                                      title={p.title}
+                                      caseId={p.page_id}
+                                    />
+                                  }
+                                  onClick={() =>
+                                    onSelectPage(p.file_path, dir)
+                                  }
+                                />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
               </>
             ) : null}
           </li>
@@ -372,7 +383,7 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
           collectMatchingWikiDirs(filteredPagesByDir, WIKI_ROOT),
         )
       : tree;
-    return filterTreeToOpenedNode(base, openedFolderPath);
+    return filterTreeToOpenedFocusPath(base, openedFolderPath);
   }, [tree, searchActive, filteredPagesByDir, openedFolderPath]);
 
   useEffect(() => {

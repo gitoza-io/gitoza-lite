@@ -33,6 +33,40 @@ export function filterTreeToOpenedNode(tree, openedPath) {
 }
 
 /**
+ * Keep the ancestor chain of an opened folder (like project → release),
+ * pruning siblings so only the focus path remains. Descendants of the
+ * opened node are kept intact.
+ * @param {Array<{ directory_path?: string, children?: Array }> | null | undefined} tree
+ * @param {string | null | undefined} openedPath
+ * @returns {Array<{ directory_path?: string, children?: Array }>}
+ */
+export function filterTreeToOpenedFocusPath(tree, openedPath) {
+  if (!openedPath) return tree || [];
+
+  function pruneToPath(nodes) {
+    for (const n of nodes ?? []) {
+      const path = n.directory_path;
+      if (!path) continue;
+      if (path === openedPath) {
+        return [n];
+      }
+      if (openedPath.startsWith(`${path}/`)) {
+        const childBranch = pruneToPath(n.children);
+        return [
+          {
+            ...n,
+            children: childBranch.length ? childBranch : undefined,
+          },
+        ];
+      }
+    }
+    return [];
+  }
+
+  return pruneToPath(tree);
+}
+
+/**
  * Filter a flat project list to a single open-focus project by name.
  * @param {Array<{ name?: string }> | null | undefined} projects
  * @param {string | null | undefined} openedName

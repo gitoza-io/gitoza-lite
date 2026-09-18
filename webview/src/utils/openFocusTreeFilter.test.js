@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   filterProjectsToOpenedName,
+  filterTreeToOpenedFocusPath,
   filterTreeToOpenedNode,
   filterTreeToOpenedRoot,
 } from "./openFocusTreeFilter";
@@ -60,6 +61,72 @@ describe("filterTreeToOpenedNode", () => {
 
   it("returns empty array for missing path", () => {
     expect(filterTreeToOpenedNode(tree, "missing")).toEqual([]);
+  });
+});
+
+describe("filterTreeToOpenedFocusPath", () => {
+  const leaf = {
+    directory_path: ".gitoza-lite/wiki/guides/setup/install",
+    name: "install",
+    children: [
+      {
+        directory_path: ".gitoza-lite/wiki/guides/setup/install/extra",
+        name: "extra",
+      },
+    ],
+  };
+  const setup = {
+    directory_path: ".gitoza-lite/wiki/guides/setup",
+    name: "setup",
+    children: [
+      leaf,
+      { directory_path: ".gitoza-lite/wiki/guides/setup/other", name: "other" },
+    ],
+  };
+  const guides = {
+    directory_path: ".gitoza-lite/wiki/guides",
+    name: "guides",
+    children: [
+      setup,
+      { directory_path: ".gitoza-lite/wiki/guides/faq", name: "faq" },
+    ],
+  };
+  const tree = [
+    guides,
+    { directory_path: ".gitoza-lite/wiki/other", name: "other" },
+  ];
+
+  it("returns full tree when no opened path", () => {
+    expect(filterTreeToOpenedFocusPath(tree, null)).toEqual(tree);
+  });
+
+  it("keeps root ancestor and prunes siblings when nested path is opened", () => {
+    expect(
+      filterTreeToOpenedFocusPath(
+        tree,
+        ".gitoza-lite/wiki/guides/setup/install",
+      ),
+    ).toEqual([
+      {
+        ...guides,
+        children: [
+          {
+            ...setup,
+            children: [leaf],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("keeps full subtree when top-level path is opened", () => {
+    expect(
+      filterTreeToOpenedFocusPath(tree, ".gitoza-lite/wiki/guides"),
+    ).toEqual([guides]);
+  });
+
+  it("returns empty array for missing path", () => {
+    expect(filterTreeToOpenedFocusPath(tree, "missing")).toEqual([]);
   });
 });
 
