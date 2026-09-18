@@ -151,6 +151,125 @@ export const RUN_SEARCH_KEYS = [
   },
 ];
 
+export const TICKET_STATUS_OPTIONS = [
+  { value: "open", label: "Open" },
+  { value: "in_progress", label: "In progress" },
+  { value: "in_testing", label: "In testing" },
+  { value: "blocked", label: "Blocked" },
+  { value: "done", label: "Done" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+export const TICKET_RELEASE_NONE = "__none__";
+export const TICKET_RELEASE_NONE_LABEL = "No release";
+
+export const TICKET_SEARCH_KEYS = [
+  {
+    key: "type",
+    label: "Type",
+    type: "enum",
+    placeholder: "Select type…",
+    multi: false,
+    apiParam: "type",
+    options: [
+      { value: "bug", label: "Bug" },
+      { value: "story", label: "Story" },
+      { value: "task", label: "Task" },
+      { value: "spike", label: "Spike" },
+    ],
+  },
+  {
+    key: "status",
+    label: "Status",
+    type: "enum",
+    placeholder: "Select status…",
+    multi: false,
+    apiParam: "status",
+    options: TICKET_STATUS_OPTIONS,
+  },
+  {
+    key: "priority",
+    label: "Priority",
+    type: "enum",
+    placeholder: "Select priority…",
+    multi: false,
+    apiParam: "priority",
+    filterKey: "priorities",
+    options: [
+      { value: "high", label: "High" },
+      { value: "medium", label: "Medium" },
+      { value: "low", label: "Low" },
+    ],
+  },
+  {
+    key: "assigned_to",
+    label: "Assigned to",
+    type: "user",
+    placeholder: "All",
+    multi: false,
+    apiParam: "assigned_to",
+    filterKey: "assigned_to",
+  },
+  {
+    key: "release",
+    label: "Release",
+    type: "enum",
+    placeholder: "Select release…",
+    multi: false,
+    apiParam: "release",
+    filterKey: "releases",
+    specialOptions: [{ value: TICKET_RELEASE_NONE, label: TICKET_RELEASE_NONE_LABEL }],
+  },
+  {
+    key: "tag",
+    label: "Tag",
+    type: "tag",
+    placeholder: "Select tags…",
+    multi: true,
+    apiParam: "tag",
+  },
+];
+
+export const WIKI_SEARCH_KEYS = [
+  {
+    key: "tag",
+    label: "Tag",
+    type: "tag",
+    placeholder: "Select tags…",
+    multi: true,
+    apiParam: "tag",
+  },
+  {
+    key: "status",
+    label: "Status",
+    type: "enum",
+    placeholder: "Select status…",
+    multi: false,
+    apiParam: "status",
+    options: [
+      { value: "draft", label: "Draft" },
+      { value: "published", label: "Published" },
+      { value: "outdated", label: "Outdated" },
+    ],
+  },
+];
+
+export const RELEASE_SEARCH_KEYS = [
+  {
+    key: "status",
+    label: "Status",
+    type: "enum",
+    placeholder: "Select status…",
+    multi: false,
+    apiParam: "status",
+    options: [
+      { value: "open", label: "Open" },
+      { value: "shipped", label: "Shipped" },
+      { value: "cancelled", label: "Cancelled" },
+    ],
+  },
+];
+
 /** Case search keys; omits approve_status when review is disabled. */
 export function caseSearchKeys(reviewEnabled = true) {
   if (reviewEnabled) return CASE_SEARCH_KEYS;
@@ -160,4 +279,19 @@ export function caseSearchKeys(reviewEnabled = true) {
 /** Run search keys for Test Run and Review run tab. */
 export function runSearchKeys() {
   return RUN_SEARCH_KEYS;
+}
+
+/** Ticket search keys for Tickets view. */
+export function ticketSearchKeys() {
+  return TICKET_SEARCH_KEYS;
+}
+
+/** Wiki search keys. */
+export function wikiSearchKeys() {
+  return WIKI_SEARCH_KEYS;
+}
+
+/** Release tree search keys. */
+export function releaseSearchKeys() {
+  return RELEASE_SEARCH_KEYS;
 }

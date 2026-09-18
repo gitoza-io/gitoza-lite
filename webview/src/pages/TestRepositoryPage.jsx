@@ -45,6 +45,7 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
   const [showCreateFormInPanel, setShowCreateFormInPanel] = useState(false);
   const [creatingProject, setCreatingProject] = useState(false);
   const [filterOptions, setFilterOptions] = useState({});
+  const [activeSearchChips, setActiveSearchChips] = useState([]);
   const caseListWindowRef = useRef(null);
 
   useEffect(() => {
@@ -471,6 +472,8 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
         activeRepoSlug={ACTIVE_REPO}
         reviewEnabled={false}
         filterOptions={filterOptions}
+        activeSearchChips={activeSearchChips}
+        onSearchCases={setActiveSearchChips}
         priorityFilter="all"
         onRegisterCaseListWindow={(api) => {
           caseListWindowRef.current = api;

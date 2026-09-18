@@ -7,6 +7,7 @@ import CsvImportPanel from "../components/CsvImportPanel";
 import TitleBarAddButton from "../components/TitleBarAddButton";
 import TreeToolbar from "../components/TreeToolbar";
 import SearchPanel from "../components/SearchPanel";
+import TreeQuerySearchBar from "../components/TreeQuerySearchBar";
 import HiddenViewBanner from "../components/HiddenViewBanner";
 import SearchToggleButton from "../components/SearchToggleButton";
 import Tooltip from "../components/Tooltip";
@@ -19,6 +20,10 @@ import { caseSearchKeys } from "../constants/searchKeys";
 import { TOOLBAR_BTN_BASE, TOOLBAR_BTN_SELECTED } from "../constants/toolbarStyles";
 import { useCaseListWindow } from "../hooks/useCaseListWindow";
 import { useCasePointerDrag } from "../hooks/useCasePointerDrag";
+import {
+  EMPTY_SEARCH_CHIPS,
+  useCaseSearchResults,
+} from "../hooks/useCaseSearchResults";
 import { useSearchFolderTree } from "../hooks/useSearchFolderTree";
 import { usePinnedProjects } from "../hooks/usePinnedProjects";
 import { useSearchPrefs } from "../hooks/useSearchPrefs";
@@ -108,6 +113,7 @@ function TestRepository({
   vscodeMode = false,
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [localSearchChips, setLocalSearchChips] = useState([]);
   const [expanded, setExpanded] = useState(() => new Set());
   const [importModeOpen, setImportModeOpen] = useState(false);
   const [selectedCasePaths, setSelectedCasePaths] = useState(() => new Set());
@@ -156,14 +162,25 @@ function TestRepository({
     onFolderRenameRemapConsumed?.();
   }, [folderRenameRemap, onFolderRenameRemapConsumed]);
 
-  const searchActive = Boolean(activeSearchChips?.length);
+  const controlledSearch = typeof onSearchCases === "function";
+  const effectiveSearchChips = controlledSearch
+    ? activeSearchChips || EMPTY_SEARCH_CHIPS
+    : localSearchChips;
+  const searchActive = Boolean(effectiveSearchChips?.length);
   const searchResetKey = useMemo(
     () =>
-      (activeSearchChips ?? [])
+      (effectiveSearchChips ?? [])
         .map((c) => `${c.key}:${c.value ?? ""}`)
         .join("|"),
-    [activeSearchChips],
+    [effectiveSearchChips],
   );
+
+  const { results: fetchedSearchRows } = useCaseSearchResults(
+    activeRepoSlug,
+    searchOpen && searchActive ? effectiveSearchChips : EMPTY_SEARCH_CHIPS,
+  );
+  const searchRows =
+    filteredRows?.length > 0 ? filteredRows : fetchedSearchRows;
 
   const {
     searchTree,
@@ -173,7 +190,7 @@ function TestRepository({
     handleSelectSearchFolder,
   } = useSearchFolderTree({
     apiTree: tree,
-    rows: filteredRows,
+    rows: searchRows,
     searchActive,
     searchResetKey,
   });
@@ -195,7 +212,7 @@ function TestRepository({
   const caseListWindow = useCaseListWindow({
     repoSlug: activeRepoSlug,
     folderPath: listFolderPath,
-    searchChips: searchOpen && searchActive ? activeSearchChips : [],
+    searchChips: searchOpen && searchActive ? effectiveSearchChips : [],
     priorityFilter,
     archiveMode: archivedViewOpen,
     enabled: listWindowEnabled,
@@ -242,7 +259,7 @@ function TestRepository({
           onSelectFolder={handleSelectSearchFolder}
           expanded={searchExpanded}
           onExpandedChange={setSearchExpanded}
-          badgeSourceRows={filteredRows}
+          badgeSourceRows={searchRows}
           loadedPrefixes={loadedPrefixes}
         />
       );
@@ -259,7 +276,7 @@ function TestRepository({
     handleSelectSearchFolder,
     searchExpanded,
     setSearchExpanded,
-    filteredRows,
+    searchRows,
     loadedPrefixes,
   ]);
 
@@ -422,15 +439,17 @@ function TestRepository({
   const handleSearch = useCallback(
     (chips) => {
       if (chips.length > 0) pushHistory(chips);
-      onSearchCases?.(chips);
+      if (controlledSearch) onSearchCases(chips);
+      else setLocalSearchChips(chips);
     },
-    [pushHistory, onSearchCases],
+    [pushHistory, controlledSearch, onSearchCases],
   );
 
   const handleCloseSearch = useCallback(() => {
-    onSearchCases?.([]);
+    if (controlledSearch) onSearchCases([]);
+    else setLocalSearchChips([]);
     setSearchOpen(false);
-  }, [onSearchCases]);
+  }, [controlledSearch, onSearchCases]);
 
   const handleSearchClick = useCallback(() => {
     if (searchOpen) {
@@ -441,10 +460,10 @@ function TestRepository({
     }
   }, [searchOpen, handleCloseSearch, onCloseArchivedView]);
 
-  const searchButton = vscodeMode ? null : (
+  const searchButton = (
     <SearchToggleButton
       isOpen={searchOpen}
-      hasActiveChips={!!activeSearchChips?.length}
+      hasActiveChips={!!effectiveSearchChips?.length}
       onClick={handleSearchClick}
       ariaLabelWhenClosed="Filter cases"
     />
@@ -634,6 +653,18 @@ function TestRepository({
   };
 
   const treeColumnBody = searchOpen ? (
+    vscodeMode ? (
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <TreeQuerySearchBar
+          searchKeys={caseSearchKeys(reviewEnabled)}
+          filterOptions={filterOptions}
+          chips={effectiveSearchChips}
+          onChipsChange={handleSearch}
+          placeholder="priority: high · tag: smoke · free text"
+        />
+        <div className="min-h-0 flex-1 overflow-y-auto">{searchSidebarTree}</div>
+      </div>
+    ) : (
     <SearchPanel
       searchKeys={caseSearchKeys(reviewEnabled)}
       filterOptions={filterOptions}
@@ -648,6 +679,7 @@ function TestRepository({
       freeTextSearchKey="q"
       freeTextPlaceholder="Search by ID, title, tag, path…"
     />
+    )
   ) : (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {archivedViewOpen ? (
@@ -719,7 +751,9 @@ function TestRepository({
       onDeleteCase={onDeleteCase}
       onRenameCase={onRenameCase}
       emptyMessage={
-        activeSearchChips?.length ? "No matching cases found." : "Apply a filter to see results."
+        effectiveSearchChips?.length
+          ? "No matching cases found."
+          : "Apply a filter to see results."
       }
     />
   ) : (

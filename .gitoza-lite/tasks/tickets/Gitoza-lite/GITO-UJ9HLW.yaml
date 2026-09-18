@@ -1,7 +1,7 @@
 ---
 title: Add tag and related filters to search
 type: task
-status: open
+status: cancelled
 priority: medium
 release: Gitoza-lite/0-3-1
 ---
@@ -12,6 +12,5 @@ Extend search beyond text match so users can narrow lists by tags and related fi
 
 ## Details
 
-- Add tag filtering (and other stored fields such as type/status/priority/release where missing).
-- Combine with existing id/title query (AND across dimensions).
-- Clearing filters restores the full list.
+- Superseded by **GITO-XLLQCI** (query-field search with frontmatter chips, not SearchPanel).
+- Cancelled to avoid duplicating that work.

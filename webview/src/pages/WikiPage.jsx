@@ -9,7 +9,7 @@ import SidebarRow from "../components/SidebarRow";
 import WikiEditorPanel from "../components/WikiEditorPanel";
 import { WikiPageIcon } from "../components/TestEntityIcons";
 import TitleBarAddButton from "../components/TitleBarAddButton";
-import TreeInlineSearchBar from "../components/TreeInlineSearchBar";
+import TreeQuerySearchBar from "../components/TreeQuerySearchBar";
 import TreeToolbar from "../components/TreeToolbar";
 import SidebarSection, {
   TREE_ROW_CONTENT_GAP,
@@ -18,6 +18,7 @@ import SidebarSection, {
   treeRowSelectedFullWidthClass,
 } from "../components/SidebarSection";
 import { TreeAreaHoverProvider } from "../contexts/TreeAreaHoverContext";
+import { wikiSearchKeys } from "../constants/searchKeys";
 import {
   createWikiFolder,
   createWikiPage,
@@ -31,17 +32,16 @@ import {
 import {
   collectMatchingWikiDirs,
   filterGroupedMap,
-  itemMatchesTreeSearch,
   pruneWikiTree,
 } from "../utils/entityTreeSearch";
+import {
+  collectWikiFilterOptions,
+  itemMatchesSearchChips,
+} from "../utils/querySearch";
 
 const WIKI_ROOT = ".gitoza-lite/wiki";
 const WIKI_QUERY_FIELDS = ["page_id", "title", "tags"];
-const WIKI_STATUS_OPTIONS = [
-  { value: "draft", label: "Draft" },
-  { value: "published", label: "Published" },
-  { value: "outdated", label: "Outdated" },
-];
+const WIKI_SEARCH_KEYS = wikiSearchKeys();
 
 function WikiTreeNodes({
   nodes,
@@ -203,8 +203,7 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
   const [error, setError] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [searchChips, setSearchChips] = useState([]);
 
   const reload = useCallback(async () => {
     setError(null);
@@ -266,22 +265,19 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
     return map;
   }, [allPages]);
 
-  const searchActive =
-    searchOpen &&
-    (String(searchQuery).trim().length > 0 ||
-      String(statusFilter).trim().length > 0);
+  const searchActive = searchOpen && searchChips.length > 0;
+
+  const wikiFilterOptions = useMemo(
+    () => collectWikiFilterOptions(allPages),
+    [allPages],
+  );
 
   const filteredPagesByDir = useMemo(() => {
     if (!searchActive) return pagesByDir;
     return filterGroupedMap(pagesByDir, (p) =>
-      itemMatchesTreeSearch(p, {
-        query: searchQuery,
-        queryFields: WIKI_QUERY_FIELDS,
-        enumKey: "status",
-        enumValue: statusFilter,
-      }),
+      itemMatchesSearchChips(p, searchChips, { queryFields: WIKI_QUERY_FIELDS }),
     );
-  }, [pagesByDir, searchActive, searchQuery, statusFilter]);
+  }, [pagesByDir, searchActive, searchChips]);
 
   const visibleTree = useMemo(() => {
     if (!searchActive) return tree;
@@ -319,8 +315,7 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
   const handleSearchClick = useCallback(() => {
     if (searchOpen) {
       setSearchOpen(false);
-      setSearchQuery("");
-      setStatusFilter("");
+      setSearchChips([]);
     } else {
       setSearchOpen(true);
     }
@@ -453,15 +448,12 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
         />
       </div>
       {searchOpen ? (
-        <TreeInlineSearchBar
-          query={searchQuery}
-          onQueryChange={setSearchQuery}
-          placeholder="Search wiki…"
-          enumValue={statusFilter}
-          onEnumChange={setStatusFilter}
-          enumOptions={WIKI_STATUS_OPTIONS}
-          enumAriaLabel="Filter by status"
-          enumEmptyLabel="All statuses"
+        <TreeQuerySearchBar
+          searchKeys={WIKI_SEARCH_KEYS}
+          filterOptions={wikiFilterOptions}
+          chips={searchChips}
+          onChipsChange={setSearchChips}
+          placeholder="status: draft · tag: guide · free text"
         />
       ) : null}
       {error ? (

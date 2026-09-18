@@ -11,7 +11,7 @@ import TicketEditorPanel from "../components/TicketEditorPanel";
 import { TicketTypeIcon } from "../components/TestEntityIcons";
 import TitleBarAddButton from "../components/TitleBarAddButton";
 import Tooltip from "../components/Tooltip";
-import TreeInlineSearchBar from "../components/TreeInlineSearchBar";
+import TreeQuerySearchBar from "../components/TreeQuerySearchBar";
 import TreeToolbar from "../components/TreeToolbar";
 import SidebarSection, {
   TREE_ROW_CONTENT_GAP,
@@ -20,6 +20,7 @@ import SidebarSection, {
   treeRowSelectedFullWidthClass,
 } from "../components/SidebarSection";
 import { TreeAreaHoverProvider } from "../contexts/TreeAreaHoverContext";
+import { ticketSearchKeys } from "../constants/searchKeys";
 import { usePinnedProjects } from "../hooks/usePinnedProjects";
 import {
   createTicket,
@@ -31,22 +32,19 @@ import {
   onTicketsUpdated,
   updateTicket,
 } from "../services/api";
-import {
-  filterGroupedMap,
-  itemMatchesTreeSearch,
-} from "../utils/entityTreeSearch";
+import { filterGroupedMap } from "../utils/entityTreeSearch";
 import {
   sortProjectsWithPins,
   ticketProjectsToPinTree,
 } from "../utils/folderTreePins";
 import { filterProjectsToOpenedName } from "../utils/openFocusTreeFilter";
+import {
+  collectTicketFilterOptions,
+  itemMatchesSearchChips,
+} from "../utils/querySearch";
 
 const TICKET_QUERY_FIELDS = ["ticket_id", "title"];
-const PRIORITY_OPTIONS = [
-  { value: "high", label: "High" },
-  { value: "medium", label: "Medium" },
-  { value: "low", label: "Low" },
-];
+const TICKET_SEARCH_KEYS = ticketSearchKeys();
 
 export default function TicketsPage({
   hasTicketsRoot,
@@ -63,8 +61,7 @@ export default function TicketsPage({
   const [error, setError] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
+  const [searchChips, setSearchChips] = useState([]);
   const [openedProjectName, setOpenedProjectName] = useState(null);
 
   const reload = useCallback(async () => {
@@ -131,22 +128,19 @@ export default function TicketsPage({
     return map;
   }, [tickets]);
 
-  const searchActive =
-    searchOpen &&
-    (String(searchQuery).trim().length > 0 ||
-      String(priorityFilter).trim().length > 0);
+  const searchActive = searchOpen && searchChips.length > 0;
+
+  const ticketFilterOptions = useMemo(
+    () => collectTicketFilterOptions(tickets),
+    [tickets],
+  );
 
   const filteredTicketsByProject = useMemo(() => {
     if (!searchActive) return ticketsByProject;
     return filterGroupedMap(ticketsByProject, (t) =>
-      itemMatchesTreeSearch(t, {
-        query: searchQuery,
-        queryFields: TICKET_QUERY_FIELDS,
-        enumKey: "priority",
-        enumValue: priorityFilter,
-      }),
+      itemMatchesSearchChips(t, searchChips, { queryFields: TICKET_QUERY_FIELDS }),
     );
-  }, [ticketsByProject, searchActive, searchQuery, priorityFilter]);
+  }, [ticketsByProject, searchActive, searchChips]);
 
   const pinTree = useMemo(() => ticketProjectsToPinTree(projects), [projects]);
   const { pinnedProjectPaths, isPinned, togglePin } = usePinnedProjects(
@@ -193,8 +187,7 @@ export default function TicketsPage({
   const handleSearchClick = useCallback(() => {
     if (searchOpen) {
       setSearchOpen(false);
-      setSearchQuery("");
-      setPriorityFilter("");
+      setSearchChips([]);
     } else {
       setSearchOpen(true);
     }
@@ -330,15 +323,12 @@ export default function TicketsPage({
         />
       </div>
       {searchOpen ? (
-        <TreeInlineSearchBar
-          query={searchQuery}
-          onQueryChange={setSearchQuery}
-          placeholder="Search tickets…"
-          enumValue={priorityFilter}
-          onEnumChange={setPriorityFilter}
-          enumOptions={PRIORITY_OPTIONS}
-          enumAriaLabel="Filter by priority"
-          enumEmptyLabel="All priorities"
+        <TreeQuerySearchBar
+          searchKeys={TICKET_SEARCH_KEYS}
+          filterOptions={ticketFilterOptions}
+          chips={searchChips}
+          onChipsChange={setSearchChips}
+          placeholder="status: open · tag: smoke · free text"
         />
       ) : null}
       {error ? (

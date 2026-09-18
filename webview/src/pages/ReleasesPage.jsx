@@ -12,7 +12,7 @@ import TicketEditorPanel from "../components/TicketEditorPanel";
 import { ReleaseIcon, TicketTypeIcon } from "../components/TestEntityIcons";
 import TitleBarAddButton from "../components/TitleBarAddButton";
 import Tooltip from "../components/Tooltip";
-import TreeInlineSearchBar from "../components/TreeInlineSearchBar";
+import TreeQuerySearchBar from "../components/TreeQuerySearchBar";
 import TreeToolbar from "../components/TreeToolbar";
 import SidebarSection, {
   TREE_ROW_CONTENT_GAP,
@@ -21,6 +21,7 @@ import SidebarSection, {
   treeRowSelectedFullWidthClass,
 } from "../components/SidebarSection";
 import { TreeAreaHoverProvider } from "../contexts/TreeAreaHoverContext";
+import { releaseSearchKeys } from "../constants/searchKeys";
 import { usePinnedProjects } from "../hooks/usePinnedProjects";
 import {
   createRelease,
@@ -35,22 +36,16 @@ import {
   updateRelease,
   updateTicket,
 } from "../services/api";
-import {
-  filterGroupedMap,
-  itemMatchesTreeSearch,
-} from "../utils/entityTreeSearch";
+import { filterGroupedMap } from "../utils/entityTreeSearch";
 import {
   sortProjectsWithPins,
   ticketProjectsToPinTree,
 } from "../utils/folderTreePins";
 import { filterProjectsToOpenedName } from "../utils/openFocusTreeFilter";
+import { itemMatchesSearchChips } from "../utils/querySearch";
 
 const RELEASE_QUERY_FIELDS = ["release_id", "name"];
-const RELEASE_STATUS_OPTIONS = [
-  { value: "open", label: "Open" },
-  { value: "shipped", label: "Shipped" },
-  { value: "cancelled", label: "Cancelled" },
-];
+const RELEASE_SEARCH_KEYS = releaseSearchKeys();
 
 export default function ReleasesPage({
   hasTicketsRoot,
@@ -73,8 +68,7 @@ export default function ReleasesPage({
   const [error, setError] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [searchChips, setSearchChips] = useState([]);
   const [openedProjectName, setOpenedProjectName] = useState(null);
   const [openedReleaseId, setOpenedReleaseId] = useState(null);
 
@@ -185,22 +179,14 @@ export default function ReleasesPage({
     return map;
   }, [tickets]);
 
-  const searchActive =
-    searchOpen &&
-    (String(searchQuery).trim().length > 0 ||
-      String(statusFilter).trim().length > 0);
+  const searchActive = searchOpen && searchChips.length > 0;
 
   const filteredReleasesByProject = useMemo(() => {
     if (!searchActive) return releasesByProject;
     return filterGroupedMap(releasesByProject, (r) =>
-      itemMatchesTreeSearch(r, {
-        query: searchQuery,
-        queryFields: RELEASE_QUERY_FIELDS,
-        enumKey: "status",
-        enumValue: statusFilter,
-      }),
+      itemMatchesSearchChips(r, searchChips, { queryFields: RELEASE_QUERY_FIELDS }),
     );
-  }, [releasesByProject, searchActive, searchQuery, statusFilter]);
+  }, [releasesByProject, searchActive, searchChips]);
 
   const pinTree = useMemo(() => ticketProjectsToPinTree(projects), [projects]);
   const { pinnedProjectPaths, isPinned, togglePin } = usePinnedProjects(
@@ -255,8 +241,7 @@ export default function ReleasesPage({
   const handleSearchClick = useCallback(() => {
     if (searchOpen) {
       setSearchOpen(false);
-      setSearchQuery("");
-      setStatusFilter("");
+      setSearchChips([]);
     } else {
       setSearchOpen(true);
     }
@@ -470,15 +455,11 @@ export default function ReleasesPage({
         />
       </div>
       {searchOpen ? (
-        <TreeInlineSearchBar
-          query={searchQuery}
-          onQueryChange={setSearchQuery}
-          placeholder="Search releases…"
-          enumValue={statusFilter}
-          onEnumChange={setStatusFilter}
-          enumOptions={RELEASE_STATUS_OPTIONS}
-          enumAriaLabel="Filter by status"
-          enumEmptyLabel="All statuses"
+        <TreeQuerySearchBar
+          searchKeys={RELEASE_SEARCH_KEYS}
+          chips={searchChips}
+          onChipsChange={setSearchChips}
+          placeholder="status: open · free text"
         />
       ) : null}
       {error ? (
