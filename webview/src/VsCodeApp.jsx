@@ -6,8 +6,10 @@ import TicketsPage from "./pages/TicketsPage";
 import ReleasesPage from "./pages/ReleasesPage";
 import WikiPage from "./pages/WikiPage";
 import { getInitPayload, onInit, onThemeChanged, ready } from "./api/vscodeApi";
+import { useWebviewZoom } from "./hooks/useWebviewZoom";
 
 export default function VsCodeApp() {
+  useWebviewZoom();
   const [activeView, setActiveView] = useState("tickets");
   const [hasCasesRoot, setHasCasesRoot] = useState(
     () => getInitPayload()?.hasCasesRoot ?? false,

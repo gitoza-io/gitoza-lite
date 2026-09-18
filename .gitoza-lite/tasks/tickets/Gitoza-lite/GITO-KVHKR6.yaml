@@ -1,0 +1,9 @@
+---
+title: Webview-only UI zoom (Ctrl/Cmd ± and wheel)
+type: task
+status: done
+priority: medium
+release: Gitoza-lite/0-3-0
+---
+
+Scale the Gitoza Lite UI when the panel is focused without changing VS Code zoom. Support Ctrl/Cmd ±, Ctrl/Cmd + 0 (reset), and Ctrl/Cmd + mouse wheel; persist the preference locally.

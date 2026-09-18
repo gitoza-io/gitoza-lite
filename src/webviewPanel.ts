@@ -284,7 +284,8 @@ function getWebviewHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     html {
-      font-size: var(--vscode-font-size, 13px);
+      --gitoza-ui-scale: 1;
+      font-size: calc(var(--vscode-font-size, 13px) * var(--gitoza-ui-scale));
     }
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
     #root { height: 100%; }

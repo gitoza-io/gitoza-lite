@@ -612,9 +612,11 @@ body,
   overflow: hidden;
 }
 
-/* Match VS Code workbench typography; fallbacks for Vite dev outside the extension host. */
+/* Match VS Code workbench typography; fallbacks for Vite dev outside the extension host.
+   --gitoza-ui-scale is adjusted by useWebviewZoom (Ctrl/Cmd ± / wheel). */
 html {
-  font-size: var(--vscode-font-size, 13px);
+  --gitoza-ui-scale: 1;
+  font-size: calc(var(--vscode-font-size, 13px) * var(--gitoza-ui-scale));
 }
 
 body {
