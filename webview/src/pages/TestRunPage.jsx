@@ -29,7 +29,9 @@ import {
 import { onCasesUpdated, onRunsUpdated } from "../api/vscodeApi";
 import { TestCaseIcon } from "../components/TestEntityIcons";
 import { countResultsFromCases } from "../utils/applyPendingRunResults";
+import { collectPathKeyForFolderPath } from "../utils/caseTree";
 import { browseColumnNoSelect } from "../utils/layoutClasses";
+import { filterTreeToOpenedRoot } from "../utils/openFocusTreeFilter";
 import {
   buildGroupedRunCaseListEntries,
   buildUnifiedRunTree,
@@ -223,6 +225,13 @@ export default function TestRunPage({
     [displayRuns, runDetailsByRunId],
   );
 
+  const [openedRunPath, setOpenedRunPath] = useState(null);
+
+  const focusedRunTree = useMemo(
+    () => filterTreeToOpenedRoot(unifiedRunTree, openedRunPath),
+    [unifiedRunTree, openedRunPath],
+  );
+
   const {
     selectedFolderPath,
     expanded: folderExpanded,
@@ -234,6 +243,45 @@ export default function TestRunPage({
     selectedCaseFilePath: selectedCasePath,
     enabled: displayRuns.length > 0,
   });
+
+  useEffect(() => {
+    if (!openedRunPath || !(unifiedRunTree || []).length) return;
+    if (!(unifiedRunTree || []).some((n) => n.directory_path === openedRunPath)) {
+      setOpenedRunPath(null);
+    }
+  }, [openedRunPath, unifiedRunTree]);
+
+  const handleOpenRun = useCallback(
+    (runPath) => {
+      if (!runPath) return;
+      const node = (unifiedRunTree || []).find((n) => n.directory_path === runPath);
+      if (!node?.is_run) return;
+      setOpenedRunPath(runPath);
+      handleSelectBrowseFolder(runPath);
+      const pathKey = collectPathKeyForFolderPath(unifiedRunTree, runPath) || node.name;
+      if (pathKey) {
+        setFolderExpanded((prev) => new Set([...prev, pathKey]));
+      }
+      const parsed = parseRunTreePath(runPath);
+      if (parsed?.runId) setSelectedRunId(parsed.runId);
+    },
+    [unifiedRunTree, handleSelectBrowseFolder, setFolderExpanded],
+  );
+
+  const handleCloseOpenedRun = useCallback(() => {
+    const pathKey = openedRunPath
+      ? collectPathKeyForFolderPath(unifiedRunTree, openedRunPath)
+      : null;
+    setOpenedRunPath(null);
+    if (pathKey) {
+      setFolderExpanded((prev) => {
+        if (!prev.has(pathKey)) return prev;
+        const next = new Set(prev);
+        next.delete(pathKey);
+        return next;
+      });
+    }
+  }, [openedRunPath, unifiedRunTree, setFolderExpanded]);
 
   useEffect(() => {
     setCaseListPage(1);
@@ -504,7 +552,7 @@ export default function TestRunPage({
               />
             </div>
             <RepositoryFolderTree
-              tree={unifiedRunTree}
+              tree={focusedRunTree}
               projectsReady={runsReady}
               selectedFolderPath={selectedFolderPath}
               onSelectFolder={handleSelectBrowseFolderWithRun}
@@ -519,6 +567,9 @@ export default function TestRunPage({
                 setRunContextMenu({ x: e.clientX, y: e.clientY, runId: node.run_id });
               }}
               editorLocked
+              openedRunPath={openedRunPath}
+              onOpenRun={handleOpenRun}
+              onCloseOpenedRun={handleCloseOpenedRun}
             />
           </div>
         }

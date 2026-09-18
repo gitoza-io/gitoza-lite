@@ -65,6 +65,12 @@ function RepositoryFolderTree({
   pinnedProjectPaths = null,
   onTogglePinProject = null,
   isPinnedProject = null,
+  openedProjectPath = null,
+  openedRunPath = null,
+  onOpenProject = null,
+  onCloseOpenedProject = null,
+  onOpenRun = null,
+  onCloseOpenedRun = null,
   emptyMessage = "No test projects yet",
 }) {
   const [internalExpanded, setInternalExpanded] = useState(() => new Set());
@@ -338,6 +344,12 @@ function RepositoryFolderTree({
       pinningEnabled,
       isPinned: isPinnedProject,
       onTogglePin: onTogglePinProject,
+      openedProjectPath,
+      openedRunPath,
+      onOpenProject,
+      onCloseOpenedProject,
+      onOpenRun,
+      onCloseOpenedRun,
     }),
     [
       selectedFolderPath,
@@ -372,6 +384,12 @@ function RepositoryFolderTree({
       pinningEnabled,
       isPinnedProject,
       onTogglePinProject,
+      openedProjectPath,
+      openedRunPath,
+      onOpenProject,
+      onCloseOpenedProject,
+      onOpenRun,
+      onCloseOpenedRun,
     ],
   );
 

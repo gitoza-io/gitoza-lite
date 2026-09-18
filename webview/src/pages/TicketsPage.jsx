@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, ChevronDown, ChevronRight, FilePlus2 } from "lucide-react";
+import { ArrowLeft, Box, ChevronDown, ChevronRight, FilePlus2 } from "lucide-react";
 import CaseRowLabel from "../components/CaseRowLabel";
 import ConfirmChangesTwoColumnLayout from "../components/ConfirmChangesTwoColumnLayout";
 import ContextMenu from "../components/ContextMenu";
@@ -10,6 +10,7 @@ import SidebarRow from "../components/SidebarRow";
 import TicketEditorPanel from "../components/TicketEditorPanel";
 import { TicketTypeIcon } from "../components/TestEntityIcons";
 import TitleBarAddButton from "../components/TitleBarAddButton";
+import Tooltip from "../components/Tooltip";
 import TreeInlineSearchBar from "../components/TreeInlineSearchBar";
 import TreeToolbar from "../components/TreeToolbar";
 import SidebarSection, {
@@ -38,6 +39,7 @@ import {
   sortProjectsWithPins,
   ticketProjectsToPinTree,
 } from "../utils/folderTreePins";
+import { filterProjectsToOpenedName } from "../utils/openFocusTreeFilter";
 
 const TICKET_QUERY_FIELDS = ["ticket_id", "title"];
 const PRIORITY_OPTIONS = [
@@ -63,6 +65,7 @@ export default function TicketsPage({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
+  const [openedProjectName, setOpenedProjectName] = useState(null);
 
   const reload = useCallback(async () => {
     setError(null);
@@ -155,8 +158,22 @@ export default function TicketsPage({
     const base = searchActive
       ? projects.filter((p) => filteredTicketsByProject.has(p.name))
       : projects;
-    return sortProjectsWithPins(base, pinnedProjectPaths);
-  }, [projects, searchActive, filteredTicketsByProject, pinnedProjectPaths]);
+    const pinned = sortProjectsWithPins(base, pinnedProjectPaths);
+    return filterProjectsToOpenedName(pinned, openedProjectName);
+  }, [
+    projects,
+    searchActive,
+    filteredTicketsByProject,
+    pinnedProjectPaths,
+    openedProjectName,
+  ]);
+
+  useEffect(() => {
+    if (!openedProjectName) return;
+    if (!projects.some((p) => p.name === openedProjectName)) {
+      setOpenedProjectName(null);
+    }
+  }, [openedProjectName, projects]);
 
   useEffect(() => {
     if (!searchActive) return;
@@ -261,8 +278,30 @@ export default function TicketsPage({
     setSelectedPath(null);
     setEditing(false);
     setDetail(null);
-    setExpanded((prev) => new Set(prev).add(name));
   };
+
+  const handleOpenProject = useCallback((name) => {
+    if (!name) return;
+    setOpenedProjectName(name);
+    setSelectedProject(name);
+    setSelectedPath(null);
+    setEditing(false);
+    setDetail(null);
+    setExpanded((prev) => new Set(prev).add(name));
+  }, []);
+
+  const handleCloseOpenedProject = useCallback(() => {
+    const name = openedProjectName;
+    setOpenedProjectName(null);
+    if (name) {
+      setExpanded((prev) => {
+        if (!prev.has(name)) return prev;
+        const next = new Set(prev);
+        next.delete(name);
+        return next;
+      });
+    }
+  }, [openedProjectName]);
 
   const listColumn = (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -340,21 +379,27 @@ export default function TicketsPage({
           ) : (
             <ul>
               {visibleProjects.map((p) => {
-                const isOpen = expanded.has(p.name);
+                const projectFocusActive = openedProjectName === p.name;
+                const isOpen = projectFocusActive || expanded.has(p.name);
                 const projectTickets = filteredTicketsByProject.get(p.name) || [];
                 const projectSelected =
                   selectedProject === p.name && !selectedPath;
+                const rowSurfaceClass = projectFocusActive
+                  ? projectSelected
+                    ? "sticky top-0 z-20 border-b border-slate-200/80 bg-list-selected dark:border-slate-700/80 dark:bg-slate-700"
+                    : "sticky top-0 z-20 border-b border-slate-200/80 bg-slate-50 hover:bg-list-hover dark:border-slate-700/80 dark:bg-slate-950 dark:hover:bg-slate-800"
+                  : projectSelected
+                    ? treeRowSelectedFullWidthClass
+                    : treeRowHoverFullWidthClass;
                 return (
                   <li key={p.name}>
                     <div
                       role="button"
                       tabIndex={0}
-                      className={`flex min-w-0 w-full cursor-pointer select-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400/80 dark:focus-visible:ring-indigo-500/70 ${
-                        projectSelected
-                          ? treeRowSelectedFullWidthClass
-                          : treeRowHoverFullWidthClass
-                      }`}
+                      aria-expanded={projectFocusActive ? undefined : isOpen}
+                      className={`flex min-w-0 w-full cursor-pointer select-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400/80 dark:focus-visible:ring-indigo-500/70 ${rowSurfaceClass}`}
                       onClick={() => selectProject(p.name)}
+                      onDoubleClick={() => handleOpenProject(p.name)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
@@ -377,26 +422,43 @@ export default function TicketsPage({
                         className="flex min-w-0 flex-1 items-center gap-0.5 font-medium"
                         style={{ paddingLeft: `${TREE_ROW_CONTENT_GAP}px` }}
                       >
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleProject(p.name);
-                          }}
-                          aria-expanded={isOpen}
-                          aria-label={
-                            isOpen
-                              ? `Collapse ${p.display_name}`
-                              : `Expand ${p.display_name}`
-                          }
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-                        >
-                          {isOpen ? (
-                            <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-                          ) : (
-                            <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-                          )}
-                        </button>
+                        {projectFocusActive ? (
+                          <Tooltip label="Back to all projects" placement="bottom">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleCloseOpenedProject();
+                              }}
+                              className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-200/80 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/80 dark:hover:text-slate-200"
+                              aria-label="Back to all projects"
+                            >
+                              <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+                            </button>
+                          </Tooltip>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleProject(p.name);
+                            }}
+                            aria-expanded={isOpen}
+                            aria-label={
+                              isOpen
+                                ? `Collapse ${p.display_name}`
+                                : `Expand ${p.display_name}`
+                            }
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                          >
+                            {isOpen ? (
+                              <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                            ) : (
+                              <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                            )}
+                          </button>
+                        )}
                         <div
                           className={`group flex min-w-0 flex-1 select-none items-center gap-1 rounded py-1.5 pr-1 text-left text-sm ${
                             projectSelected
@@ -412,10 +474,12 @@ export default function TicketsPage({
                             {p.display_name}
                           </span>
                           <span className="ml-auto flex shrink-0 items-center gap-1">
-                            <ProjectPinButton
-                              pinned={isPinned(p.project_path)}
-                              onToggle={() => togglePin(p.project_path)}
-                            />
+                            {!projectFocusActive ? (
+                              <ProjectPinButton
+                                pinned={isPinned(p.project_path)}
+                                onToggle={() => togglePin(p.project_path)}
+                              />
+                            ) : null}
                             <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                               {projectTickets.length}
                             </span>

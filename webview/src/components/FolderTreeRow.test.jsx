@@ -116,12 +116,74 @@ describe("FolderTreeRow select vs expand", () => {
     expect(onSelectFolder).not.toHaveBeenCalled();
   });
 
-  it("row wrapper does not expose aria-expanded", () => {
+  it("row wrapper exposes aria-expanded when expand is available", () => {
     renderRow();
     const rowButton = container.querySelector('[role="button"][tabindex="0"]');
-    expect(rowButton.hasAttribute("aria-expanded")).toBe(false);
+    expect(rowButton.getAttribute("aria-expanded")).toBe("false");
     const expandButton = container.querySelector('button[aria-expanded="false"]');
     expect(expandButton).not.toBeNull();
+  });
+});
+
+describe("FolderTreeRow open-focus", () => {
+  it("double-click opens the project", () => {
+    const onOpenProject = vi.fn();
+    renderRow({ onOpenProject });
+
+    const rowButton = container.querySelector('[role="button"][tabindex="0"]');
+    act(() => {
+      rowButton.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    });
+
+    expect(onOpenProject).toHaveBeenCalledWith(projectNode.directory_path);
+  });
+
+  it("shows back control and closes opened project", () => {
+    const onCloseOpenedProject = vi.fn();
+    renderRow({
+      openedProjectPath: projectNode.directory_path,
+      onCloseOpenedProject,
+    });
+
+    const backButton = container.querySelector('button[aria-label="Back to all projects"]');
+    expect(backButton).not.toBeNull();
+    expect(container.querySelector('button[aria-expanded]')).toBeNull();
+
+    act(() => {
+      backButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(onCloseOpenedProject).toHaveBeenCalled();
+  });
+
+  it("double-click opens a run", () => {
+    const onOpenRun = vi.fn();
+    const runNode = {
+      name: "smoke",
+      display_name: "smoke",
+      directory_path: "__run__/smoke",
+      is_run: true,
+      is_project: true,
+      run_id: "smoke",
+      children: [],
+      case_count: 0,
+    };
+    renderRow({
+      row: {
+        kind: "folder",
+        node: runNode,
+        pathKey: "smoke",
+        level: 0,
+        isExpanded: false,
+      },
+      onOpenRun,
+    });
+
+    const rowButton = container.querySelector('[role="button"][tabindex="0"]');
+    act(() => {
+      rowButton.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    });
+
+    expect(onOpenRun).toHaveBeenCalledWith(runNode.directory_path);
   });
 });
 

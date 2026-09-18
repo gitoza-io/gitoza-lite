@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Archive, ArrowLeft, FileDown, FileUp } from "lucide-react";
-import { findFolderNode, getParentDirectoryPath } from "../utils/caseTree";
+import { findFolderNode, getParentDirectoryPath, collectPathKeyForFolderPath } from "../utils/caseTree";
 import { isArchivedDirectoryPath } from "../constants/casePaths";
 import CaseEditorPanel from "../components/CaseEditorPanel";
 import CsvImportPanel from "../components/CsvImportPanel";
@@ -24,6 +24,7 @@ import { usePinnedProjects } from "../hooks/usePinnedProjects";
 import { useSearchPrefs } from "../hooks/useSearchPrefs";
 import { commitInlineCaseCreate } from "../utils/inlineCaseCommit";
 import { remapExpandKeys, remapPathUnderPrefix } from "../utils/patchRepositoryTree";
+import { filterTreeToOpenedRoot } from "../utils/openFocusTreeFilter";
 
 const LAST_FOLDER_STORAGE_KEY = "testRepo.twoPane.lastFolder";
 
@@ -112,11 +113,28 @@ function TestRepository({
   const [selectedCasePaths, setSelectedCasePaths] = useState(() => new Set());
   const [creatingCaseInPath, setCreatingCaseInPath] = useState(null);
   const [creatingCaseError, setCreatingCaseError] = useState(null);
+  const [openedProjectPath, setOpenedProjectPath] = useState(null);
   const didInitialFolderRef = useRef(false);
   const prevArchivedViewOpenRef = useRef(archivedViewOpen);
   const { history, favorites, pushHistory, toggleFavorite, isFavorite } =
     useSearchPrefs("case");
   const { pinnedProjectPaths, isPinned, togglePin } = usePinnedProjects(activeRepoSlug, tree);
+
+  const focusedTree = useMemo(
+    () => filterTreeToOpenedRoot(tree, openedProjectPath),
+    [tree, openedProjectPath],
+  );
+
+  useEffect(() => {
+    if (!openedProjectPath || !(tree || []).length) return;
+    if (!(tree || []).some((n) => n.directory_path === openedProjectPath)) {
+      setOpenedProjectPath(null);
+    }
+  }, [openedProjectPath, tree]);
+
+  useEffect(() => {
+    setOpenedProjectPath(null);
+  }, [archivedViewOpen]);
 
   useEffect(() => {
     if (!selectedCaseFilePath) setSelectedCasePaths(new Set());
@@ -256,6 +274,36 @@ function TestRepository({
     },
     [onSelectBrowseFolder, onFolderExpand],
   );
+
+  const handleOpenProject = useCallback(
+    (folderPath) => {
+      if (!folderPath) return;
+      const found = findFolderNode(tree, folderPath);
+      if (!found || found.is_project !== true) return;
+      setOpenedProjectPath(folderPath);
+      handleSelectBrowseFolder(folderPath);
+      const pathKey = collectPathKeyForFolderPath(tree, folderPath) || found.name;
+      if (pathKey) {
+        setExpanded((prev) => new Set([...prev, pathKey]));
+      }
+    },
+    [tree, handleSelectBrowseFolder],
+  );
+
+  const handleCloseOpenedProject = useCallback(() => {
+    const pathKey = openedProjectPath
+      ? collectPathKeyForFolderPath(tree, openedProjectPath)
+      : null;
+    setOpenedProjectPath(null);
+    if (pathKey) {
+      setExpanded((prev) => {
+        if (!prev.has(pathKey)) return prev;
+        const next = new Set(prev);
+        next.delete(pathKey);
+        return next;
+      });
+    }
+  }, [openedProjectPath, tree]);
 
   const handleMoveCasesToFolderAndClear = useCallback(
     async (paths, target) => {
@@ -609,7 +657,7 @@ function TestRepository({
         />
       ) : null}
       <RepositoryFolderTree
-        tree={tree}
+        tree={focusedTree}
         projectsReady={projectsReady}
         treeStructureLoadingPrefixes={treeStructureLoadingPrefixes}
         selectedFolderPath={selectedFolderPath}
@@ -645,6 +693,9 @@ function TestRepository({
         pinnedProjectPaths={pinnedProjectPaths}
         onTogglePinProject={togglePin}
         isPinnedProject={isPinned}
+        openedProjectPath={openedProjectPath}
+        onOpenProject={handleOpenProject}
+        onCloseOpenedProject={handleCloseOpenedProject}
       />
     </div>
   );

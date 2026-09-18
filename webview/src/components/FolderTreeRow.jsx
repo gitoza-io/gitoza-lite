@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Box, ChevronDown, ChevronRight, FolderPlus, Loader2, Pin } from "lucide-react";
+import { ArrowLeft, Box, ChevronDown, ChevronRight, FolderPlus, Loader2, Pin } from "lucide-react";
 import InlineRenameConflictAlert from "./InlineRenameConflictAlert";
 import InlineRenameInput from "./InlineRenameInput";
 import Tooltip from "./Tooltip";
@@ -56,6 +56,12 @@ function FolderTreeRow({
   pinningEnabled = false,
   isPinned,
   onTogglePin,
+  openedProjectPath = null,
+  openedRunPath = null,
+  onOpenProject = null,
+  onCloseOpenedProject = null,
+  onOpenRun = null,
+  onCloseOpenedRun = null,
 }) {
   const RowTag = virtualized ? "div" : "li";
   const rowClassName = `min-w-0 ${virtualized ? "" : "list-none"}`;
@@ -139,12 +145,18 @@ function FolderTreeRow({
   const isDragOverFolder = Boolean(canDropIntoFolder) && dragOverFolderPath === folderDropTarget;
   const isContextFolderHighlight =
     contextMenuTargetFolderNode != null && contextMenuTargetFolderNode === node;
+  const projectFocusActive =
+    Boolean(openedProjectPath) && openedProjectPath === node.directory_path;
+  const runFocusActive = Boolean(openedRunPath) && openedRunPath === node.directory_path;
+  const showBackControl = projectFocusActive || runFocusActive;
   const pinned =
     pinningEnabled && isProject && !isRun && node.directory_path
       ? Boolean(isPinned?.(node.directory_path))
       : false;
-  const showPinControl = pinningEnabled && isProject && !isRun && !isRenaming;
+  const showPinControl =
+    pinningEnabled && isProject && !isRun && !isRenaming && !showBackControl;
   const displayName = node.display_name ?? editableName ?? node.name;
+  const folderRowSelected = isSelected || isContextFolderHighlight;
 
   const handleSelectFolder = () => {
     if (isRenaming || !node.directory_path) return;
@@ -165,13 +177,36 @@ function FolderTreeRow({
 
   const handleExpandClick = (e) => {
     e.stopPropagation();
-    if (isRenaming || !canToggle) return;
+    if (isRenaming || !canToggle || showBackControl) return;
     if (isExpanded) {
       onToggle(pathKey);
       return;
     }
     onFolderExpand?.(node.directory_path);
     onToggle(pathKey);
+  };
+
+  const handleBackClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (runFocusActive) {
+      onCloseOpenedRun?.();
+      return;
+    }
+    onCloseOpenedProject?.();
+  };
+
+  const handleRowDoubleClick = () => {
+    if (isRenaming || !node.directory_path) return;
+    if (isRun && onOpenRun) {
+      if (openedRunPath === node.directory_path) return;
+      onOpenRun(node.directory_path);
+      return;
+    }
+    if (isProject && !isRun && onOpenProject) {
+      if (openedProjectPath === node.directory_path) return;
+      onOpenProject(node.directory_path);
+    }
   };
 
   const handleRowKeyDown = (e) => {
@@ -209,6 +244,8 @@ function FolderTreeRow({
     }
   };
 
+  const backAriaLabel = runFocusActive ? "Back to all runs" : "Back to all projects";
+
   return (
     <RowTag
       ref={measureRef}
@@ -219,7 +256,9 @@ function FolderTreeRow({
       <div
         role="button"
         tabIndex={0}
+        aria-expanded={canToggle && !showBackControl ? isExpanded : undefined}
         onClick={handleRowClick}
+        onDoubleClick={handleRowDoubleClick}
         onKeyDown={handleRowKeyDown}
         onMouseDown={(e) => {
           if (!isRenaming && e.button !== 0) e.preventDefault();
@@ -228,11 +267,15 @@ function FolderTreeRow({
         className={`flex min-w-0 w-full cursor-pointer select-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400/80 dark:focus-visible:ring-indigo-500/70 ${
           isDragOverFolder
             ? "bg-transparent"
-            : isContextFolderHighlight
-              ? treeRowSelectedFullWidthClass
-              : isSelected
+            : showBackControl
+              ? folderRowSelected
+                ? "sticky top-0 z-20 border-b border-slate-200/80 bg-list-selected dark:border-slate-700/80 dark:bg-slate-700"
+                : "sticky top-0 z-20 border-b border-slate-200/80 bg-slate-50 hover:bg-list-hover dark:border-slate-700/80 dark:bg-slate-950 dark:hover:bg-slate-800"
+              : isContextFolderHighlight
                 ? treeRowSelectedFullWidthClass
-                : treeRowHoverFullWidthClass
+                : isSelected
+                  ? treeRowSelectedFullWidthClass
+                  : treeRowHoverFullWidthClass
         }`}
         data-folder-drop-header={multiSelectActive && folderDropTarget ? folderDropTarget : undefined}
         title={displayName}
@@ -255,7 +298,18 @@ function FolderTreeRow({
               className="h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50"
             />
           ) : null}
-          {canToggle ? (
+          {showBackControl ? (
+            <Tooltip label={backAriaLabel} placement="bottom">
+              <button
+                type="button"
+                onClick={handleBackClick}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-200/80 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/80 dark:hover:text-slate-200"
+                aria-label={backAriaLabel}
+              >
+                <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            </Tooltip>
+          ) : canToggle ? (
             <button
               type="button"
               onClick={handleExpandClick}
@@ -381,6 +435,8 @@ function folderTreeRowPropsAreEqual(prev, next) {
   if (prev.pickerMode !== next.pickerMode) return false;
   if (prev.virtualized !== next.virtualized) return false;
   if (prev.pinningEnabled !== next.pinningEnabled) return false;
+  if (prev.openedProjectPath !== next.openedProjectPath) return false;
+  if (prev.openedRunPath !== next.openedRunPath) return false;
   if (prev.contextMenuTargetFolderNode !== next.contextMenuTargetFolderNode) return false;
   if (prev.directoryIndex !== next.directoryIndex) return false;
   if (prev.selectedFilePaths !== next.selectedFilePaths) return false;

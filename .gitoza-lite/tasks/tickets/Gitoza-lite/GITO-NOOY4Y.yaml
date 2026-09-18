@@ -1,0 +1,9 @@
+---
+title: Open-focus navigation for projects, releases, and runs
+type: task
+status: done
+priority: medium
+release: Gitoza-lite/0-3-1
+---
+
+Chevron expands or collapses only. Single-click selects a project, release, or run without expanding. Double-click enters open-focus (siblings hidden; chevron becomes a back arrow). Applies to Tickets, Releases, Test Repository, and Test Run.
