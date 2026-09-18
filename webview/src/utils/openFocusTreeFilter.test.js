@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   filterProjectsToOpenedName,
+  filterTreeToOpenedNode,
   filterTreeToOpenedRoot,
 } from "./openFocusTreeFilter";
 
@@ -23,6 +24,42 @@ describe("filterTreeToOpenedRoot", () => {
 
   it("returns empty array for missing path", () => {
     expect(filterTreeToOpenedRoot(tree, "missing")).toEqual([]);
+  });
+});
+
+describe("filterTreeToOpenedNode", () => {
+  const nested = {
+    directory_path: ".gitoza-lite/wiki/guides/setup",
+    name: "setup",
+    children: [],
+  };
+  const tree = [
+    {
+      directory_path: ".gitoza-lite/wiki/guides",
+      name: "guides",
+      children: [nested],
+    },
+    { directory_path: ".gitoza-lite/wiki/other", name: "other" },
+  ];
+
+  it("returns full tree when no opened path", () => {
+    expect(filterTreeToOpenedNode(tree, null)).toEqual(tree);
+  });
+
+  it("filters to a nested opened node", () => {
+    expect(
+      filterTreeToOpenedNode(tree, ".gitoza-lite/wiki/guides/setup"),
+    ).toEqual([nested]);
+  });
+
+  it("filters to a top-level opened node", () => {
+    expect(filterTreeToOpenedNode(tree, ".gitoza-lite/wiki/guides")).toEqual([
+      tree[0],
+    ]);
+  });
+
+  it("returns empty array for missing path", () => {
+    expect(filterTreeToOpenedNode(tree, "missing")).toEqual([]);
   });
 });
 
