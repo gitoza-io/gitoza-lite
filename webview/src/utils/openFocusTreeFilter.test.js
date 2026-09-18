@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildOpenFocusPathLabel,
   filterProjectsToOpenedName,
   filterTreeToOpenedFocusPath,
   filterTreeToOpenedNode,
@@ -127,6 +128,53 @@ describe("filterTreeToOpenedFocusPath", () => {
 
   it("returns empty array for missing path", () => {
     expect(filterTreeToOpenedFocusPath(tree, "missing")).toEqual([]);
+  });
+});
+
+describe("buildOpenFocusPathLabel", () => {
+  const tree = [
+    {
+      directory_path: ".gitoza-lite/wiki/guides",
+      name: "guides",
+      display_name: "Guides",
+      children: [
+        {
+          directory_path: ".gitoza-lite/wiki/guides/setup",
+          name: "setup",
+          display_name: "Setup",
+          children: [
+            {
+              directory_path: ".gitoza-lite/wiki/guides/setup/install",
+              name: "install",
+              display_name: "Install",
+            },
+          ],
+        },
+      ],
+    },
+  ];
+
+  it("returns empty string when no opened path", () => {
+    expect(buildOpenFocusPathLabel(tree, null)).toBe("");
+  });
+
+  it("returns a single segment for a top-level path", () => {
+    expect(
+      buildOpenFocusPathLabel(tree, ".gitoza-lite/wiki/guides"),
+    ).toBe("Guides");
+  });
+
+  it("joins display names with slashes for nested paths", () => {
+    expect(
+      buildOpenFocusPathLabel(
+        tree,
+        ".gitoza-lite/wiki/guides/setup/install",
+      ),
+    ).toBe("Guides/Setup/Install");
+  });
+
+  it("returns empty string for a missing path", () => {
+    expect(buildOpenFocusPathLabel(tree, "missing")).toBe("");
   });
 });
 

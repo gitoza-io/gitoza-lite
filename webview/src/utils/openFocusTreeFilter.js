@@ -67,6 +67,32 @@ export function filterTreeToOpenedFocusPath(tree, openedPath) {
 }
 
 /**
+ * Build a slash-joined breadcrumb label along the path to an opened node
+ * (e.g. "guides/setup/install").
+ * @param {Array<{ directory_path?: string, display_name?: string, name?: string, children?: Array }> | null | undefined} tree
+ * @param {string | null | undefined} openedPath
+ * @returns {string}
+ */
+export function buildOpenFocusPathLabel(tree, openedPath) {
+  if (!openedPath) return "";
+  const labels = [];
+  function walk(nodes) {
+    for (const n of nodes ?? []) {
+      const path = n.directory_path;
+      if (!path) continue;
+      if (path === openedPath || openedPath.startsWith(`${path}/`)) {
+        labels.push(n.display_name ?? n.name ?? path.split("/").pop() ?? path);
+        if (path === openedPath) return true;
+        return walk(n.children);
+      }
+    }
+    return false;
+  }
+  walk(tree);
+  return labels.join("/");
+}
+
+/**
  * Filter a flat project list to a single open-focus project by name.
  * @param {Array<{ name?: string }> | null | undefined} projects
  * @param {string | null | undefined} openedName

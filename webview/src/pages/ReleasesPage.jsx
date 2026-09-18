@@ -715,104 +715,106 @@ export default function ReleasesPage({
                     : treeRowHoverFullWidthClass;
                 return (
                   <li key={p.name}>
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      aria-expanded={projectFocusActive ? undefined : isOpen}
-                      className={`flex min-w-0 w-full cursor-pointer select-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400/80 dark:focus-visible:ring-indigo-500/70 ${projectRowSurface}`}
-                      onClick={() => selectProject(p.name)}
-                      onDoubleClick={() => handleOpenProject(p.name)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          selectProject(p.name);
-                        }
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setSelectedProject(p.name);
-                        setContextMenu({
-                          x: e.clientX,
-                          y: e.clientY,
-                          projectName: p.name,
-                        });
-                      }}
-                    >
-                      <TreeRowGuides level={0} />
+                    {!openedReleaseId ? (
                       <div
-                        className="flex min-w-0 flex-1 items-center gap-0.5 font-medium"
-                        style={{ paddingLeft: `${TREE_ROW_CONTENT_GAP}px` }}
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={projectFocusActive ? undefined : isOpen}
+                        className={`flex min-w-0 w-full cursor-pointer select-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400/80 dark:focus-visible:ring-indigo-500/70 ${projectRowSurface}`}
+                        onClick={() => selectProject(p.name)}
+                        onDoubleClick={() => handleOpenProject(p.name)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            selectProject(p.name);
+                          }
+                        }}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedProject(p.name);
+                          setContextMenu({
+                            x: e.clientX,
+                            y: e.clientY,
+                            projectName: p.name,
+                          });
+                        }}
                       >
-                        {projectFocusActive ? (
-                          <Tooltip label="Back to all projects" placement="bottom">
+                        <TreeRowGuides level={0} />
+                        <div
+                          className="flex min-w-0 flex-1 items-center gap-0.5 font-medium"
+                          style={{ paddingLeft: `${TREE_ROW_CONTENT_GAP}px` }}
+                        >
+                          {projectFocusActive ? (
+                            <Tooltip label="Back to all projects" placement="bottom">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleCloseOpenedProject();
+                                }}
+                                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-200/80 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/80 dark:hover:text-slate-200"
+                                aria-label="Back to all projects"
+                              >
+                                <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+                              </button>
+                            </Tooltip>
+                          ) : (
                             <button
                               type="button"
                               onClick={(e) => {
-                                e.preventDefault();
                                 e.stopPropagation();
-                                handleCloseOpenedProject();
+                                if (openedProjectName === p.name) return;
+                                toggleProject(p.name);
                               }}
-                              className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-200/80 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/80 dark:hover:text-slate-200"
-                              aria-label="Back to all projects"
+                              aria-expanded={isOpen}
+                              aria-label={
+                                isOpen
+                                  ? `Collapse ${p.display_name}`
+                                  : `Expand ${p.display_name}`
+                              }
+                              className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
                             >
-                              <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+                              {isOpen ? (
+                                <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                              ) : (
+                                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                              )}
                             </button>
-                          </Tooltip>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (openedProjectName === p.name) return;
-                              toggleProject(p.name);
-                            }}
-                            aria-expanded={isOpen}
-                            aria-label={
-                              isOpen
-                                ? `Collapse ${p.display_name}`
-                                : `Expand ${p.display_name}`
-                            }
-                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                          )}
+                          <div
+                            className={`group flex min-w-0 flex-1 select-none items-center gap-1 rounded py-1.5 pr-1 text-left text-sm ${
+                              projectSelected
+                                ? "font-semibold text-ink dark:text-slate-100"
+                                : "text-slate-600 dark:text-slate-300"
+                            }`}
                           >
-                            {isOpen ? (
-                              <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-                            ) : (
-                              <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-                            )}
-                          </button>
-                        )}
-                        <div
-                          className={`group flex min-w-0 flex-1 select-none items-center gap-1 rounded py-1.5 pr-1 text-left text-sm ${
-                            projectSelected
-                              ? "font-semibold text-ink dark:text-slate-100"
-                              : "text-slate-600 dark:text-slate-300"
-                          }`}
-                        >
-                          <Box
-                            className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400"
-                            aria-hidden
-                          />
-                          <span className="min-w-0 flex-1 truncate">
-                            {p.display_name}
-                          </span>
-                          <span className="ml-auto flex shrink-0 items-center gap-1">
-                            {!projectFocusActive && !openedReleaseId ? (
-                              <ProjectPinButton
-                                pinned={isPinned(p.project_path)}
-                                onToggle={() => togglePin(p.project_path)}
-                              />
-                            ) : null}
-                            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                              {projectReleaseCount}
+                            <Box
+                              className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400"
+                              aria-hidden
+                            />
+                            <span className="min-w-0 flex-1 truncate">
+                              {p.display_name}
                             </span>
-                          </span>
+                            <span className="ml-auto flex shrink-0 items-center gap-1">
+                              {!projectFocusActive ? (
+                                <ProjectPinButton
+                                  pinned={isPinned(p.project_path)}
+                                  onToggle={() => togglePin(p.project_path)}
+                                />
+                              ) : null}
+                              <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                {projectReleaseCount}
+                              </span>
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ) : null}
                     {isOpen || creatingHere ? (
                       <ul>
-                        {creatingHere ? (
+                        {creatingHere && !openedReleaseId ? (
                           <li>
                             <div className="flex min-w-0 w-full items-center gap-0.5">
                               <TreeRowGuides level={1} />
@@ -838,6 +840,8 @@ export default function ReleasesPage({
                         {projectReleases.map((r) => {
                           const releaseFocusActive =
                             openedReleaseId === r.release_id;
+                          const releaseLevel = releaseFocusActive ? 0 : 1;
+                          const ticketLevel = releaseFocusActive ? 1 : 2;
                           const releaseOpen =
                             releaseFocusActive ||
                             expandedReleases.has(r.release_id);
@@ -863,6 +867,9 @@ export default function ReleasesPage({
                             : releaseSelected
                               ? treeRowSelectedFullWidthClass
                               : treeRowHoverFullWidthClass;
+                          const releaseLabel = releaseFocusActive
+                            ? `${p.display_name}/${r.name}`
+                            : r.name;
                           return (
                             <li key={r.file_path}>
                               <div
@@ -883,7 +890,7 @@ export default function ReleasesPage({
                                   }
                                 }}
                               >
-                                <TreeRowGuides level={1} />
+                                <TreeRowGuides level={releaseLevel} />
                                 <div
                                   className="flex min-w-0 flex-1 items-center gap-0.5 font-medium"
                                   style={{
@@ -946,15 +953,28 @@ export default function ReleasesPage({
                                         : "text-slate-600 dark:text-slate-300"
                                     }`}
                                   >
-                                    <span className="shrink-0">
-                                      <ReleaseIcon />
-                                    </span>
-                                    <div className="min-w-0 flex-1">
-                                      <CaseRowLabel
-                                        title={r.name}
-                                        caseId={r.release_id}
+                                    {releaseFocusActive ? (
+                                      <Rocket
+                                        className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400"
+                                        aria-hidden
                                       />
-                                    </div>
+                                    ) : (
+                                      <span className="shrink-0">
+                                        <ReleaseIcon />
+                                      </span>
+                                    )}
+                                    {releaseFocusActive ? (
+                                      <span className="min-w-0 flex-1 truncate">
+                                        {releaseLabel}
+                                      </span>
+                                    ) : (
+                                      <div className="min-w-0 flex-1">
+                                        <CaseRowLabel
+                                          title={r.name}
+                                          caseId={r.release_id}
+                                        />
+                                      </div>
+                                    )}
                                     <span className="ml-auto shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                       {releaseTicketCount}
                                     </span>
@@ -975,7 +995,7 @@ export default function ReleasesPage({
                                               : treeRowHoverFullWidthClass
                                           }`}
                                         >
-                                          <TreeRowGuides level={2} />
+                                          <TreeRowGuides level={ticketLevel} />
                                           <div
                                             className="flex min-w-0 flex-1 items-center gap-1"
                                             style={{
@@ -1014,7 +1034,7 @@ export default function ReleasesPage({
                                   {releaseTickets.length === 0 ? (
                                     <li>
                                       <div className="flex min-w-0 w-full">
-                                        <TreeRowGuides level={2} />
+                                        <TreeRowGuides level={ticketLevel} />
                                         <div
                                           className="py-2 text-sm text-slate-400"
                                           style={{
@@ -1033,7 +1053,9 @@ export default function ReleasesPage({
                             </li>
                           );
                         })}
-                        {!creatingHere && projectReleases.length === 0 ? (
+                        {!creatingHere &&
+                        !openedReleaseId &&
+                        projectReleases.length === 0 ? (
                           <li>
                             <div className="flex min-w-0 w-full">
                               <TreeRowGuides level={1} />

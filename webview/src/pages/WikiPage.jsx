@@ -41,7 +41,10 @@ import {
   filterGroupedMap,
   pruneWikiTree,
 } from "../utils/entityTreeSearch";
-import { filterTreeToOpenedFocusPath, filterTreeToOpenedNode } from "../utils/openFocusTreeFilter";
+import {
+  buildOpenFocusPathLabel,
+  filterTreeToOpenedNode,
+} from "../utils/openFocusTreeFilter";
 import {
   collectWikiFilterOptions,
   itemMatchesSearchChips,
@@ -93,6 +96,7 @@ function WikiTreeNodes({
   onSelectPage,
   onFolderContextMenu,
   openedFolderPath,
+  openFocusLabel,
   onOpenFolder,
   onCloseOpenedFolder,
   creatingFolderParent,
@@ -104,17 +108,11 @@ function WikiTreeNodes({
     <ul>
       {nodes.map((node) => {
         const dir = node.directory_path;
-        const isAncestorOfOpened =
-          Boolean(openedFolderPath) &&
-          openedFolderPath !== dir &&
-          openedFolderPath.startsWith(`${dir}/`);
         const folderFocusActive = openedFolderPath === dir;
-        const onOpenedPath = folderFocusActive || isAncestorOfOpened;
         const isCreatingHere = creatingFolderParent === dir;
         const isOpen =
-          onOpenedPath || isCreatingHere || expanded.has(dir);
-        const pages =
-          isAncestorOfOpened ? [] : pagesByDir.get(dir) || [];
+          folderFocusActive || isCreatingHere || expanded.has(dir);
+        const pages = pagesByDir.get(dir) || [];
         const folderSelected = selectedDir === dir && !selectedPath;
         const backParent = wikiParentDir(dir);
         const backLabel = backParent
@@ -127,6 +125,10 @@ function WikiTreeNodes({
           : folderSelected
             ? treeRowSelectedFullWidthClass
             : treeRowHoverFullWidthClass;
+        const rowLabel =
+          folderFocusActive && openFocusLabel
+            ? openFocusLabel
+            : node.display_name;
         return (
           <li key={dir}>
             <div
@@ -169,7 +171,6 @@ function WikiTreeNodes({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (onOpenedPath) return;
                       onToggle(dir);
                     }}
                     aria-expanded={isOpen}
@@ -194,13 +195,9 @@ function WikiTreeNodes({
                       : "text-slate-600 dark:text-slate-300"
                   }`}
                 >
-                  <span className="min-w-0 flex-1 truncate">
-                    {node.display_name}
-                  </span>
+                  <span className="min-w-0 flex-1 truncate">{rowLabel}</span>
                   <span className="ml-auto shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                    {isAncestorOfOpened
-                      ? (pagesByDir.get(dir) || []).length
-                      : pages.length}
+                    {pages.length}
                   </span>
                 </div>
               </div>
@@ -228,55 +225,54 @@ function WikiTreeNodes({
                   onSelectPage={onSelectPage}
                   onFolderContextMenu={onFolderContextMenu}
                   openedFolderPath={openedFolderPath}
+                  openFocusLabel={openFocusLabel}
                   onOpenFolder={onOpenFolder}
                   onCloseOpenedFolder={onCloseOpenedFolder}
                   creatingFolderParent={creatingFolderParent}
                   onCommitCreateFolder={onCommitCreateFolder}
                   depth={depth + 1}
                 />
-                {!isAncestorOfOpened ? (
-                  <ul>
-                    {pages.map((p) => {
-                      const isSelected = selectedPath === p.file_path;
-                      return (
-                        <li key={p.file_path}>
+                <ul>
+                  {pages.map((p) => {
+                    const isSelected = selectedPath === p.file_path;
+                    return (
+                      <li key={p.file_path}>
+                        <div
+                          className={`flex min-w-0 w-full ${
+                            isSelected
+                              ? treeRowSelectedFullWidthClass
+                              : treeRowHoverFullWidthClass
+                          }`}
+                        >
+                          <TreeRowGuides level={depth + 1} />
                           <div
-                            className={`flex min-w-0 w-full ${
-                              isSelected
-                                ? treeRowSelectedFullWidthClass
-                                : treeRowHoverFullWidthClass
-                            }`}
+                            className="flex min-w-0 flex-1 items-center gap-1"
+                            style={{
+                              paddingLeft: `${TREE_ROW_CONTENT_GAP}px`,
+                            }}
                           >
-                            <TreeRowGuides level={depth + 1} />
-                            <div
-                              className="flex min-w-0 flex-1 items-center gap-1"
-                              style={{
-                                paddingLeft: `${TREE_ROW_CONTENT_GAP}px`,
-                              }}
-                            >
-                              <div className="min-w-0 flex-1">
-                                <SidebarRow
-                                  selected={isSelected}
-                                  selectionOnParent
-                                  icon={<WikiPageIcon />}
-                                  label={
-                                    <CaseRowLabel
-                                      title={p.title}
-                                      caseId={p.page_id}
-                                    />
-                                  }
-                                  onClick={() =>
-                                    onSelectPage(p.file_path, dir)
-                                  }
-                                />
-                              </div>
+                            <div className="min-w-0 flex-1">
+                              <SidebarRow
+                                selected={isSelected}
+                                selectionOnParent
+                                icon={<WikiPageIcon />}
+                                label={
+                                  <CaseRowLabel
+                                    title={p.title}
+                                    caseId={p.page_id}
+                                  />
+                                }
+                                onClick={() =>
+                                  onSelectPage(p.file_path, dir)
+                                }
+                              />
                             </div>
                           </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               </>
             ) : null}
           </li>
@@ -383,8 +379,16 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
           collectMatchingWikiDirs(filteredPagesByDir, WIKI_ROOT),
         )
       : tree;
-    return filterTreeToOpenedFocusPath(base, openedFolderPath);
+    return filterTreeToOpenedNode(base, openedFolderPath);
   }, [tree, searchActive, filteredPagesByDir, openedFolderPath]);
+
+  const openFocusLabel = useMemo(
+    () =>
+      openedFolderPath
+        ? buildOpenFocusPathLabel(tree, openedFolderPath)
+        : "",
+    [tree, openedFolderPath],
+  );
 
   useEffect(() => {
     if (!openedFolderPath) return;
@@ -646,6 +650,7 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
             }}
             onFolderContextMenu={openFolderContextMenu}
             openedFolderPath={openedFolderPath}
+            openFocusLabel={openFocusLabel}
             onOpenFolder={handleOpenFolder}
             onCloseOpenedFolder={handleCloseOpenedFolder}
             creatingFolderParent={
