@@ -1,0 +1,9 @@
+---
+title: Add tag and related filters to search
+type: task
+status: open
+priority: medium
+release: Gitoza-lite/0-3-1
+---
+
+Extend search to filter by tags and related fields beyond the current criteria.

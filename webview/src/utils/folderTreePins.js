@@ -106,3 +106,50 @@ export function prunePinnedProjects(pinnedPaths, tree) {
   const valid = collectProjectDirectoryPaths(tree);
   return pinnedPaths.filter((p) => valid.has(p));
 }
+
+/**
+ * Build a minimal pin-tree from ticket/release project list items for prune support.
+ *
+ * @param {Array<{ project_path?: string }>} projects
+ * @returns {array}
+ */
+export function ticketProjectsToPinTree(projects) {
+  return (projects || [])
+    .filter((p) => p?.project_path)
+    .map((p) => ({
+      is_project: true,
+      directory_path: p.project_path,
+    }));
+}
+
+/**
+ * Reorder flat project list items: pinned first (A–Z), then original order for the rest.
+ *
+ * @param {Array<{ project_path?: string, display_name?: string, name?: string }>} projects
+ * @param {Set<string>} pinnedPaths
+ * @returns {array}
+ */
+export function sortProjectsWithPins(projects, pinnedPaths) {
+  if (!projects?.length || !pinnedPaths?.size) return projects ?? [];
+
+  const pinned = [];
+  const unpinned = [];
+  for (const project of projects) {
+    const path = project?.project_path;
+    if (path && pinnedPaths.has(path)) {
+      pinned.push(project);
+    } else {
+      unpinned.push(project);
+    }
+  }
+
+  if (!pinned.length) return projects;
+
+  pinned.sort((a, b) =>
+    folderSortLabel(a).localeCompare(folderSortLabel(b), undefined, {
+      sensitivity: "base",
+    }),
+  );
+
+  return [...pinned, ...unpinned];
+}

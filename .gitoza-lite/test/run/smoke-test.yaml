@@ -1,0 +1,17 @@
+---
+title: smoke test
+---
+
+cases:
+  - path: .gitoza-lite/test/cases/gitoza-lite/01-install-update/INST-UP-001.yaml
+    result: pending
+  - path: .gitoza-lite/test/cases/gitoza-lite/02-tickets/TKT-001.yaml
+    result: pending
+  - path: .gitoza-lite/test/cases/gitoza-lite/03-wiki/WIKI-001.yaml
+    result: pending
+  - path: .gitoza-lite/test/cases/gitoza-lite/04-release/REL-001.yaml
+    result: pending
+  - path: .gitoza-lite/test/cases/gitoza-lite/05-case/CASE-001.yaml
+    result: pending
+  - path: .gitoza-lite/test/cases/gitoza-lite/06-run/RUN-001.yaml
+    result: pending

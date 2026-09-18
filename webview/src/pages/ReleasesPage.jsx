@@ -4,6 +4,7 @@ import CaseRowLabel from "../components/CaseRowLabel";
 import ConfirmChangesTwoColumnLayout from "../components/ConfirmChangesTwoColumnLayout";
 import ContextMenu from "../components/ContextMenu";
 import InlineRenameInput from "../components/InlineRenameInput";
+import ProjectPinButton from "../components/ProjectPinButton";
 import SearchToggleButton from "../components/SearchToggleButton";
 import SidebarRow from "../components/SidebarRow";
 import ReleaseEditorPanel from "../components/ReleaseEditorPanel";
@@ -19,6 +20,7 @@ import SidebarSection, {
   treeRowSelectedFullWidthClass,
 } from "../components/SidebarSection";
 import { TreeAreaHoverProvider } from "../contexts/TreeAreaHoverContext";
+import { usePinnedProjects } from "../hooks/usePinnedProjects";
 import {
   createRelease,
   createTicketProject,
@@ -36,6 +38,10 @@ import {
   filterGroupedMap,
   itemMatchesTreeSearch,
 } from "../utils/entityTreeSearch";
+import {
+  sortProjectsWithPins,
+  ticketProjectsToPinTree,
+} from "../utils/folderTreePins";
 
 const RELEASE_QUERY_FIELDS = ["release_id", "name"];
 const RELEASE_STATUS_OPTIONS = [
@@ -192,10 +198,18 @@ export default function ReleasesPage({
     );
   }, [releasesByProject, searchActive, searchQuery, statusFilter]);
 
+  const pinTree = useMemo(() => ticketProjectsToPinTree(projects), [projects]);
+  const { pinnedProjectPaths, isPinned, togglePin } = usePinnedProjects(
+    "ticket-projects",
+    pinTree,
+  );
+
   const visibleProjects = useMemo(() => {
-    if (!searchActive) return projects;
-    return projects.filter((p) => filteredReleasesByProject.has(p.name));
-  }, [projects, searchActive, filteredReleasesByProject]);
+    const base = searchActive
+      ? projects.filter((p) => filteredReleasesByProject.has(p.name))
+      : projects;
+    return sortProjectsWithPins(base, pinnedProjectPaths);
+  }, [projects, searchActive, filteredReleasesByProject, pinnedProjectPaths]);
 
   useEffect(() => {
     if (!searchActive) return;
@@ -506,8 +520,14 @@ export default function ReleasesPage({
                           <span className="min-w-0 flex-1 truncate">
                             {p.display_name}
                           </span>
-                          <span className="ml-auto shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                            {projectReleases.length}
+                          <span className="ml-auto flex shrink-0 items-center gap-1">
+                            <ProjectPinButton
+                              pinned={isPinned(p.project_path)}
+                              onToggle={() => togglePin(p.project_path)}
+                            />
+                            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                              {projectReleases.length}
+                            </span>
                           </span>
                         </div>
                       </div>

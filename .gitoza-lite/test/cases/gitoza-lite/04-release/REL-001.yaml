@@ -1,0 +1,46 @@
+---
+title: Open release and create linked ticket
+status: active
+priority: medium
+tags: [smoke, release]
+---
+
+## Description
+
+Verify the Releases view shows release 0.3.1 with linked tickets, and that creating a ticket from a release pre-fills the release field.
+
+## Page object
+
+- **Nav.Releases** — sidebar Releases icon
+- **Releases.Tree** — project / release tree
+- **Releases.Detail** — release detail pane
+- **Releases.LinkedTickets** — tickets list filtered by this release
+- **Releases.ContextMenu** — right-click menu on a release
+- **Releases.CreateTicket** — create-ticket action from context menu
+- **Tickets.Detail** — ticket editor opened after create
+- **Tickets.ReleaseField** — release field on the ticket
+
+## Steps
+
+1. Click **Nav.Releases**.
+2. In **Releases.Tree**, open project `Gitoza-lite` and select release `0.3.1`.
+3. Confirm **Releases.Detail** loads and **Releases.LinkedTickets** lists tickets with `release: Gitoza-lite/0-3-1`.
+4. Right-click the release to open **Releases.ContextMenu**, then choose **Releases.CreateTicket**.
+5. In **Tickets.Detail**, confirm **Tickets.ReleaseField** is set to `Gitoza-lite/0-3-1`.
+6. Save the ticket and return to the release view.
+
+## Expected results
+
+- Release `0.3.1` opens and shows its linked tickets.
+- New ticket has release pre-filled to `Gitoza-lite/0-3-1`.
+- New ticket appears under **Releases.LinkedTickets** after save.
+
+## Actual results
+
+_(Record outcomes during execution.)_
+
+## Environment
+
+- VS Code / Cursor version:
+- Extension version / build:
+- OS:

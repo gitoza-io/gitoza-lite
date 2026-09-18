@@ -1,0 +1,9 @@
+---
+title: Create ticket from release with release pre-filled
+type: task
+status: open
+priority: medium
+release: Gitoza-lite/0-3-1
+---
+
+From the Releases view, right-click a release and create a ticket. The new ticket must set `release` to that release automatically.

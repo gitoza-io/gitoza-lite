@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   collectProjectDirectoryPaths,
   prunePinnedProjects,
+  sortProjectsWithPins,
   sortTreeWithPinnedProjects,
+  ticketProjectsToPinTree,
 } from "./folderTreePins";
 
 const repoProjects = [
@@ -133,5 +135,50 @@ describe("prunePinnedProjects", () => {
     ]);
     expect(paths.has("__run__/r1/.gitoza/test/cases/p1")).toBe(true);
     expect(paths.has("__run__/r1")).toBe(false);
+  });
+});
+
+describe("sortProjectsWithPins", () => {
+  const ticketProjects = [
+    {
+      name: "zebra",
+      display_name: "Zebra",
+      project_path: ".gitoza-lite/tasks/tickets/zebra",
+    },
+    {
+      name: "alpha",
+      display_name: "Alpha",
+      project_path: ".gitoza-lite/tasks/tickets/alpha",
+    },
+    {
+      name: "beta",
+      display_name: "Beta",
+      project_path: ".gitoza-lite/tasks/tickets/beta",
+    },
+  ];
+
+  it("puts pinned projects first, alphabetical among pinned", () => {
+    const pinned = new Set([
+      ".gitoza-lite/tasks/tickets/zebra",
+      ".gitoza-lite/tasks/tickets/beta",
+    ]);
+    const sorted = sortProjectsWithPins(ticketProjects, pinned);
+    expect(sorted.map((p) => p.name)).toEqual(["beta", "zebra", "alpha"]);
+  });
+
+  it("preserves order when nothing is pinned", () => {
+    expect(sortProjectsWithPins(ticketProjects, new Set())).toEqual(ticketProjects);
+  });
+});
+
+describe("ticketProjectsToPinTree", () => {
+  it("maps project_path to pin-eligible tree nodes", () => {
+    const tree = ticketProjectsToPinTree([
+      { project_path: ".gitoza-lite/tasks/tickets/a" },
+      { name: "missing-path" },
+    ]);
+    expect(tree).toEqual([
+      { is_project: true, directory_path: ".gitoza-lite/tasks/tickets/a" },
+    ]);
   });
 });
