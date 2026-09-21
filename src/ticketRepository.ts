@@ -197,6 +197,7 @@ export class TicketRepository {
           assigned_to: parsed.assigned_to,
           reporter: parsed.reporter,
           release: parsed.release,
+          params: parsed.params ?? {},
           file_path: rel,
           project: parsed.project,
         });

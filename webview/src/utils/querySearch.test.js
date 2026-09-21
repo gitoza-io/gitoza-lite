@@ -7,6 +7,7 @@ import {
   suggestKeys,
   suggestValues,
   tabCompleteDraft,
+  withParamSearchKeys,
 } from "./querySearch";
 
 const keys = ticketSearchKeys();
@@ -45,6 +46,31 @@ describe("suggestKeys / suggestValues / tabCompleteDraft", () => {
   });
 });
 
+describe("withParamSearchKeys", () => {
+  it("appends catalog keys as param-field and skips reserved", () => {
+    const next = withParamSearchKeys(keys, {
+      param_keys: ["browser", "status", "environment"],
+    });
+    expect(next.some((k) => k.key === "browser" && k.type === "param-field")).toBe(true);
+    expect(next.some((k) => k.key === "environment" && k.type === "param-field")).toBe(true);
+    expect(next.filter((k) => k.key === "status")).toHaveLength(1);
+    expect(next.some((k) => k.label === "Custom field" || k.key === "param")).toBe(false);
+  });
+
+  it("suggests param key and values from catalog", () => {
+    const searchKeys = withParamSearchKeys(keys, {
+      param_keys: ["browser"],
+      param_values_by_key: { browser: ["chrome", "firefox"] },
+    });
+    expect(suggestKeys("bro", searchKeys).some((x) => x.key === "browser")).toBe(true);
+    const values = suggestValues("browser: ch", searchKeys, {
+      param_keys: ["browser"],
+      param_values_by_key: { browser: ["chrome", "firefox"] },
+    });
+    expect(values.map((v) => v.value)).toEqual(["chrome"]);
+  });
+});
+
 describe("itemMatchesSearchChips", () => {
   const ticket = {
     ticket_id: "GITO-1",
@@ -55,6 +81,7 @@ describe("itemMatchesSearchChips", () => {
     tags: ["smoke"],
     assigned_to: "Ada",
     release: "Gitoza-lite/0-3-1",
+    params: { browser: "Chrome" },
   };
 
   it("ANDs chips", () => {
@@ -86,6 +113,23 @@ describe("itemMatchesSearchChips", () => {
       ),
     ).toBe(true);
   });
+
+  it("matches custom field params", () => {
+    expect(
+      itemMatchesSearchChips(
+        ticket,
+        [{ key: "browser", value: "chrome" }],
+        { paramKeys: ["browser"], searchKeys: [{ key: "browser", type: "param-field" }] },
+      ),
+    ).toBe(true);
+    expect(
+      itemMatchesSearchChips(
+        ticket,
+        [{ key: "browser", value: "firefox" }],
+        { paramKeys: ["browser"], searchKeys: [{ key: "browser", type: "param-field" }] },
+      ),
+    ).toBe(false);
+  });
 });
 
 describe("collectTicketFilterOptions", () => {
@@ -97,5 +141,15 @@ describe("collectTicketFilterOptions", () => {
     expect(opts.tags).toEqual(["a", "b"]);
     expect(opts.assigned_to).toEqual(["Ada", "Bob"]);
     expect(opts.releases).toEqual(["r1"]);
+  });
+
+  it("collects custom field params", () => {
+    const opts = collectTicketFilterOptions([
+      { tags: [], params: { browser: "chrome", env: "staging" } },
+      { tags: [], params: { browser: "firefox", env: "staging" } },
+    ]);
+    expect(opts.param_keys).toEqual(["browser", "env"]);
+    expect(opts.param_values_by_key.browser).toEqual(["chrome", "firefox"]);
+    expect(opts.param_values_by_key.env).toEqual(["staging"]);
   });
 });

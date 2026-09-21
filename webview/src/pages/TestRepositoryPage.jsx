@@ -11,6 +11,7 @@ import {
   findRunsReferencingCases,
   getCaseDetail,
   getCaseFilters,
+  getCases,
   renameFolder,
   updateCase,
   initializeCasesRoot,
@@ -18,6 +19,12 @@ import {
 import { useLazyRepositoryTree } from "../hooks/useLazyRepositoryTree";
 import { onCasesUpdated } from "../api/vscodeApi";
 import { findFolderNode, isProjectDirectoryPath } from "../utils/caseTree";
+import {
+  collectParamsFromCases,
+  collectTagsFromCases,
+  mergeCaseFilterParams,
+  mergeCaseFilterTags,
+} from "../utils/caseFilters";
 import {
   formatRunReferenceWarning,
   pathUnderPrefix,
@@ -51,15 +58,45 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
   const selectedCaseFilePathRef = useRef(null);
   selectedCaseFilePathRef.current = selectedCaseFilePath;
 
-  useEffect(() => {
-    getCaseFilters(ACTIVE_REPO)
-      .then(setFilterOptions)
-      .catch(() => setFilterOptions({}));
+  const refreshFilterOptions = useCallback(async () => {
+    let opts = {};
+    try {
+      opts = (await getCaseFilters(ACTIVE_REPO)) || {};
+    } catch {
+      opts = {};
+    }
+    try {
+      const list = await getCases(ACTIVE_REPO, {});
+      const items = list?.items || [];
+      opts = mergeCaseFilterTags(opts, items);
+      opts = mergeCaseFilterParams(opts, items);
+      if (!(opts.tags?.length) && items.length) {
+        opts = { ...opts, tags: collectTagsFromCases(items) };
+      }
+      if (!(opts.param_keys?.length) && items.length) {
+        opts = { ...opts, ...collectParamsFromCases(items) };
+      }
+    } catch {
+      // keep API/stub filters
+    }
+    return opts;
   }, []);
+
+  useEffect(() => {
+    if (!hasCasesRoot) return undefined;
+    let cancelled = false;
+    void refreshFilterOptions().then((opts) => {
+      if (!cancelled) setFilterOptions(opts);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hasCasesRoot, refreshFilterOptions]);
 
   useEffect(() => {
     return onCasesUpdated(() => {
       void loadData();
+      void refreshFilterOptions().then(setFilterOptions);
       caseListWindowRef.current?.invalidateAll?.();
       const path = selectedCaseFilePathRef.current;
       if (path) {
@@ -70,7 +107,7 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
           .catch(() => {});
       }
     });
-  }, [loadData]);
+  }, [loadData, refreshFilterOptions]);
 
   useEffect(() => {
     if (!selectedCaseFilePath) {

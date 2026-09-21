@@ -183,6 +183,7 @@ export class CaseRepository {
           requirement_id: parsed.requirement_id,
           assigned_to: parsed.assigned_to,
           automated: parsed.automated,
+          params: parsed.params ?? {},
         });
       } catch {
         // skip unreadable files

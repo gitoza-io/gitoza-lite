@@ -61,6 +61,7 @@ import { filterProjectsToOpenedName } from "../utils/openFocusTreeFilter";
 import {
   collectTicketFilterOptions,
   itemMatchesSearchChips,
+  withParamSearchKeys,
 } from "../utils/querySearch";
 import {
   countReleaseQuickFilters,
@@ -324,6 +325,11 @@ export default function ReleasesPage({
     [tickets],
   );
 
+  const effectiveTicketSearchKeys = useMemo(
+    () => withParamSearchKeys(TICKET_SEARCH_KEYS, ticketFilterOptions),
+    [ticketFilterOptions],
+  );
+
   const filteredReleasesByProject = useMemo(() => {
     if (releaseFocusActive || !releaseQuickFilter) return releasesByProject;
     return filterGroupedMap(releasesByProject, (r) =>
@@ -347,9 +353,19 @@ export default function ReleasesPage({
   const searchFilteredReleaseTickets = useMemo(() => {
     if (!searchActive) return openedReleaseTickets;
     return openedReleaseTickets.filter((t) =>
-      itemMatchesSearchChips(t, searchChips, { queryFields: TICKET_QUERY_FIELDS }),
+      itemMatchesSearchChips(t, searchChips, {
+        queryFields: TICKET_QUERY_FIELDS,
+        paramKeys: ticketFilterOptions.param_keys,
+        searchKeys: effectiveTicketSearchKeys,
+      }),
     );
-  }, [openedReleaseTickets, searchActive, searchChips]);
+  }, [
+    openedReleaseTickets,
+    searchActive,
+    searchChips,
+    ticketFilterOptions,
+    effectiveTicketSearchKeys,
+  ]);
 
   const filteredReleaseTickets = useMemo(() => {
     if (!ticketQuickFilter) return searchFilteredReleaseTickets;
@@ -709,7 +725,7 @@ export default function ReleasesPage({
       </div>
       {releaseFocusActive && searchOpen ? (
         <TreeQuerySearchBar
-          searchKeys={TICKET_SEARCH_KEYS}
+          searchKeys={effectiveTicketSearchKeys}
           filterOptions={ticketFilterOptions}
           chips={searchChips}
           onChipsChange={setSearchChips}

@@ -28,8 +28,10 @@ import { useSearchFolderTree } from "../hooks/useSearchFolderTree";
 import { usePinnedProjects } from "../hooks/usePinnedProjects";
 import { useSearchPrefs } from "../hooks/useSearchPrefs";
 import { commitInlineCaseCreate } from "../utils/inlineCaseCommit";
+import { collectParamsFromCases } from "../utils/caseFilters";
 import { remapExpandKeys, remapPathUnderPrefix } from "../utils/patchRepositoryTree";
 import { filterTreeToOpenedRoot } from "../utils/openFocusTreeFilter";
+import { withParamSearchKeys } from "../utils/querySearch";
 
 const LAST_FOLDER_STORAGE_KEY = "testRepo.twoPane.lastFolder";
 
@@ -175,9 +177,13 @@ function TestRepository({
     [effectiveSearchChips],
   );
 
-  const { results: fetchedSearchRows } = useCaseSearchResults(
+  const { results: fetchedSearchRows, loading: searchResultsLoading } = useCaseSearchResults(
     activeRepoSlug,
     searchOpen && searchActive ? effectiveSearchChips : EMPTY_SEARCH_CHIPS,
+    {
+      paramKeys: filterOptions?.param_keys,
+      searchKeys: withParamSearchKeys(caseSearchKeys(reviewEnabled), filterOptions),
+    },
   );
   const searchRows =
     filteredRows?.length > 0 ? filteredRows : fetchedSearchRows;
@@ -242,6 +248,49 @@ function TestRepository({
     () => caseListWindow.items.map((c) => c.file_path).filter(Boolean),
     [caseListWindow.items],
   );
+
+  /** Union host filters with params seen on loaded case rows (browse + search). */
+  const catalogFilterOptions = useMemo(() => {
+    const rows = [...(caseListWindow.items || []), ...(fetchedSearchRows || [])];
+    const collected = collectParamsFromCases(rows);
+    if (!collected.param_keys.length) return filterOptions;
+
+    const keyMap = new Map(
+      (filterOptions?.param_keys || []).map((k) => [String(k).toLowerCase(), String(k)]),
+    );
+    for (const k of collected.param_keys) {
+      const key = String(k).trim();
+      if (!key) continue;
+      if (!keyMap.has(key.toLowerCase())) keyMap.set(key.toLowerCase(), key);
+    }
+
+    const valuesByKey = { ...(filterOptions?.param_values_by_key || {}) };
+    for (const [rawKey, vals] of Object.entries(collected.param_values_by_key || {})) {
+      const canonical = keyMap.get(String(rawKey).toLowerCase()) || rawKey;
+      const bucket = new Map(
+        (valuesByKey[canonical] || []).map((v) => [String(v).toLowerCase(), String(v)]),
+      );
+      for (const v of vals || []) {
+        const norm = String(v).trim();
+        if (!norm) continue;
+        bucket.set(norm.toLowerCase(), norm);
+      }
+      valuesByKey[canonical] = [...bucket.values()].sort((a, b) => a.localeCompare(b));
+    }
+
+    return {
+      ...filterOptions,
+      param_keys: [...keyMap.values()].sort((a, b) => a.localeCompare(b)),
+      param_values_by_key: valuesByKey,
+    };
+  }, [filterOptions, caseListWindow.items, fetchedSearchRows]);
+
+  const effectiveSearchKeys = useMemo(
+    () => withParamSearchKeys(caseSearchKeys(reviewEnabled), catalogFilterOptions),
+    [reviewEnabled, catalogFilterOptions],
+  );
+
+  const searchListActive = searchOpen && searchActive;
 
   const searchListTitle = useMemo(() => {
     if (!searchActive) return "Search results";
@@ -639,12 +688,12 @@ function TestRepository({
   const activeListFolderPath = searchOpen ? searchFolderPath : selectedFolderPath;
 
   const sharedVirtualListProps = {
-    cases: caseListWindow.items,
-    total: caseListWindow.total,
-    loading: caseListWindow.loading,
-    loadingMore: caseListWindow.loadingMore,
-    hasMore: caseListWindow.hasMore,
-    onLoadMore: caseListWindow.loadMore,
+    cases: searchListActive ? searchRows : caseListWindow.items,
+    total: searchListActive ? searchRows.length : caseListWindow.total,
+    loading: searchListActive ? searchResultsLoading : caseListWindow.loading,
+    loadingMore: searchListActive ? false : caseListWindow.loadingMore,
+    hasMore: searchListActive ? false : caseListWindow.hasMore,
+    onLoadMore: searchListActive ? undefined : caseListWindow.loadMore,
     folderPath: activeListFolderPath,
     listTitle: activeListTitle,
     selectedCaseFilePath,
@@ -656,8 +705,8 @@ function TestRepository({
     vscodeMode ? (
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <TreeQuerySearchBar
-          searchKeys={caseSearchKeys(reviewEnabled)}
-          filterOptions={filterOptions}
+          searchKeys={effectiveSearchKeys}
+          filterOptions={catalogFilterOptions}
           chips={effectiveSearchChips}
           onChipsChange={handleSearch}
           placeholder="priority: high · tag: smoke · free text"
@@ -666,8 +715,8 @@ function TestRepository({
       </div>
     ) : (
     <SearchPanel
-      searchKeys={caseSearchKeys(reviewEnabled)}
-      filterOptions={filterOptions}
+      searchKeys={effectiveSearchKeys}
+      filterOptions={catalogFilterOptions}
       onSearch={handleSearch}
       onClose={handleCloseSearch}
       history={history}
@@ -820,9 +869,9 @@ function TestRepository({
       targetFolder={contextTargetFolder}
       editorLocked={editorLocked}
       reviewEnabled={reviewEnabled}
-      allTags={filterOptions?.tags}
-      paramKeys={filterOptions?.param_keys}
-      paramValuesByKey={filterOptions?.param_values_by_key}
+      allTags={catalogFilterOptions?.tags}
+      paramKeys={catalogFilterOptions?.param_keys}
+      paramValuesByKey={catalogFilterOptions?.param_values_by_key}
       allUsernames={allUsernames}
       repoSlug={activeRepoSlug}
       storageSyncConfigured={storageSyncConfigured}

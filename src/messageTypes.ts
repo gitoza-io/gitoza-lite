@@ -80,6 +80,7 @@ export interface YamlCaseListItem {
   requirement_id?: string;
   assigned_to?: string;
   automated: boolean;
+  params?: Record<string, string>;
 }
 
 export interface YamlCaseListResponse {
@@ -159,6 +160,7 @@ export interface YamlTicketListItem {
   assigned_to?: string;
   reporter?: string;
   release?: string;
+  params?: Record<string, string>;
   file_path: string;
   project?: string;
 }

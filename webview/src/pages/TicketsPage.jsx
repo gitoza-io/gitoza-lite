@@ -51,6 +51,7 @@ import { filterProjectsToOpenedName } from "../utils/openFocusTreeFilter";
 import {
   collectTicketFilterOptions,
   itemMatchesSearchChips,
+  withParamSearchKeys,
 } from "../utils/querySearch";
 import {
   countTicketQuickFilters,
@@ -186,12 +187,21 @@ export default function TicketsPage({
     [tickets],
   );
 
+  const effectiveTicketSearchKeys = useMemo(
+    () => withParamSearchKeys(TICKET_SEARCH_KEYS, ticketFilterOptions),
+    [ticketFilterOptions],
+  );
+
   const searchFilteredByProject = useMemo(() => {
     if (!searchActive) return ticketsByProject;
     return filterGroupedMap(ticketsByProject, (t) =>
-      itemMatchesSearchChips(t, searchChips, { queryFields: TICKET_QUERY_FIELDS }),
+      itemMatchesSearchChips(t, searchChips, {
+        queryFields: TICKET_QUERY_FIELDS,
+        paramKeys: ticketFilterOptions.param_keys,
+        searchKeys: effectiveTicketSearchKeys,
+      }),
     );
-  }, [ticketsByProject, searchActive, searchChips]);
+  }, [ticketsByProject, searchActive, searchChips, ticketFilterOptions, effectiveTicketSearchKeys]);
 
   const filteredTicketsByProject = useMemo(() => {
     if (!quickFilter) return searchFilteredByProject;
@@ -446,7 +456,7 @@ export default function TicketsPage({
       </div>
       {searchOpen ? (
         <TreeQuerySearchBar
-          searchKeys={TICKET_SEARCH_KEYS}
+          searchKeys={effectiveTicketSearchKeys}
           filterOptions={ticketFilterOptions}
           chips={searchChips}
           onChipsChange={setSearchChips}

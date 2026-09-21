@@ -75,13 +75,6 @@ export const CASE_SEARCH_KEYS = [
     ],
   },
   {
-    key: "param",
-    label: "Custom field",
-    type: "param",
-    placeholder: "Select key…",
-    multi: true,
-  },
-  {
     key: "tag",
     label: "Tag",
     type: "tag",

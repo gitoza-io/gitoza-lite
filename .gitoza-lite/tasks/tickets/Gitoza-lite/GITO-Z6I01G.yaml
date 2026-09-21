@@ -1,7 +1,7 @@
 ---
 title: Search custom fields as frontmatter keys, not a Custom field key
 type: bug
-status: open
+status: done
 priority: medium
 release: Gitoza-lite/0-3-1
 ---

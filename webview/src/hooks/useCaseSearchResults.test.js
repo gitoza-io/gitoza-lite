@@ -17,11 +17,11 @@ import { chipsToCaseQueryParams, fetchAllCases } from "../utils/caseQuery";
 let container = null;
 let root = null;
 
-function renderUseCaseSearchResults(repoSlug, chips) {
+function renderUseCaseSearchResults(repoSlug, chips, matchOpts) {
   let hookResult = null;
 
   function TestComponent() {
-    hookResult = useCaseSearchResults(repoSlug, chips);
+    hookResult = useCaseSearchResults(repoSlug, chips, matchOpts);
     return null;
   }
 
@@ -33,9 +33,10 @@ function renderUseCaseSearchResults(repoSlug, chips) {
     get current() {
       return hookResult;
     },
-    rerender(nextRepoSlug, nextChips) {
+    rerender(nextRepoSlug, nextChips, nextMatchOpts) {
       repoSlug = nextRepoSlug;
       chips = nextChips;
+      if (nextMatchOpts !== undefined) matchOpts = nextMatchOpts;
       act(() => {
         root.render(createElement(TestComponent));
       });
@@ -71,7 +72,7 @@ describe("useCaseSearchResults", () => {
   });
 
   it("fetches cases with mapped params when chips are set", async () => {
-    const rows = [{ file_path: "proj/case.yaml", title: "Case" }];
+    const rows = [{ file_path: "proj/case.yaml", title: "Case", tags: ["smoke"] }];
     fetchAllCases.mockResolvedValueOnce(rows);
 
     const chips = [{ key: "tag", value: "smoke" }];
@@ -87,8 +88,29 @@ describe("useCaseSearchResults", () => {
     expect(hook.current.loading).toBe(false);
   });
 
+  it("filters fetched rows client-side by chips", async () => {
+    fetchAllCases.mockResolvedValueOnce([
+      { file_path: "a.yaml", tags: ["smoke"], params: { browser: "chrome" } },
+      { file_path: "b.yaml", tags: ["other"], params: { browser: "firefox" } },
+    ]);
+
+    const chips = [{ key: "browser", value: "chrome" }];
+    const hook = renderUseCaseSearchResults("my-repo", chips, {
+      paramKeys: ["browser"],
+      searchKeys: [{ key: "browser", type: "param-field" }],
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(hook.current.results).toEqual([
+      { file_path: "a.yaml", tags: ["smoke"], params: { browser: "chrome" } },
+    ]);
+  });
+
   it("clears results when chips become empty", async () => {
-    fetchAllCases.mockResolvedValueOnce([{ file_path: "a.yaml" }]);
+    fetchAllCases.mockResolvedValueOnce([{ file_path: "a.yaml", tags: ["smoke"] }]);
 
     const hook = renderUseCaseSearchResults("my-repo", [{ key: "tag", value: "smoke" }]);
     await act(async () => {
@@ -116,7 +138,7 @@ describe("useCaseSearchResults", () => {
       resolveFirst = resolve;
     });
     fetchAllCases.mockReturnValueOnce(firstPromise);
-    fetchAllCases.mockResolvedValueOnce([{ file_path: "fresh.yaml" }]);
+    fetchAllCases.mockResolvedValueOnce([{ file_path: "fresh.yaml", tags: ["new"] }]);
 
     const hook = renderUseCaseSearchResults("my-repo", [{ key: "tag", value: "old" }]);
     hook.rerender("my-repo", [{ key: "tag", value: "new" }]);
@@ -124,12 +146,12 @@ describe("useCaseSearchResults", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    expect(hook.current.results).toEqual([{ file_path: "fresh.yaml" }]);
+    expect(hook.current.results).toEqual([{ file_path: "fresh.yaml", tags: ["new"] }]);
 
     await act(async () => {
-      resolveFirst([{ file_path: "stale.yaml" }]);
+      resolveFirst([{ file_path: "stale.yaml", tags: ["old"] }]);
       await Promise.resolve();
     });
-    expect(hook.current.results).toEqual([{ file_path: "fresh.yaml" }]);
+    expect(hook.current.results).toEqual([{ file_path: "fresh.yaml", tags: ["new"] }]);
   });
 });

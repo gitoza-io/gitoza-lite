@@ -122,8 +122,12 @@ export function chipsToCaseQueryParams(chips) {
         params.param_filters.push({ key: paramKey, value });
         break;
       }
-      default:
+      default: {
+        // Frontmatter custom fields (param-field chips): key is the param name
+        if (!params.param_filters) params.param_filters = [];
+        params.param_filters.push({ key, value });
         break;
+      }
     }
   }
 

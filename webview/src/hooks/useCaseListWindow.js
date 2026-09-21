@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { REPOSITORY_CASE_WINDOW_SIZE } from "../constants/repositoryCaseList";
 import { chipsToCaseQueryParams, fetchCaseWindow } from "../utils/caseQuery";
+import { itemMatchesSearchChips } from "../utils/querySearch";
 import {
   caseListWindowQueryKey,
   hashSearchChips,
@@ -151,7 +152,8 @@ export function useCaseListWindow({
       }
 
       const generation = generationRef.current;
-      const { repoSlug: slug, windowSize: size } = optionsRef.current;
+      const { repoSlug: slug, windowSize: size, searchChips: chips } =
+        optionsRef.current;
       const params = buildRequestParams();
       const result = await fetchCaseWindow(slug, params, {
         limit: size,
@@ -162,16 +164,28 @@ export function useCaseListWindow({
         return result;
       }
 
+      // Host listCases ignores most chip filters; apply them client-side (incl. custom fields).
+      const filteredItems =
+        chips?.length > 0
+          ? (result.items || []).filter((row) =>
+              itemMatchesSearchChips(row, chips, {
+                queryFields: ["case_id", "title"],
+              }),
+            )
+          : result.items || [];
+      const filteredTotal =
+        chips?.length > 0 ? filteredItems.length : result.total;
+
       let nextItems;
       let nextTotal;
       if (append) {
-        nextItems = mergeCaseWindowItems(itemsRef.current, result.items);
-        nextTotal = result.total;
+        nextItems = mergeCaseWindowItems(itemsRef.current, filteredItems);
+        nextTotal = chips?.length > 0 ? nextItems.length : filteredTotal;
       } else {
         const merged = consumePendingOptimisticRows(
           queryKeyRef.current,
-          result.items,
-          result.total,
+          filteredItems,
+          filteredTotal,
         );
         nextItems = merged.items;
         nextTotal = merged.total;
@@ -181,7 +195,7 @@ export function useCaseListWindow({
       setItems(nextItems);
       writeCache(queryKeyRef.current, nextItems, nextTotal);
       setError(null);
-      return { ...result, items: nextItems, total: nextTotal };
+      return { items: nextItems, total: nextTotal };
     },
     [buildRequestParams, writeCache, consumePendingOptimisticRows],
   );

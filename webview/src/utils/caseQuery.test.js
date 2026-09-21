@@ -47,6 +47,19 @@ describe("chipsToCaseQueryParams", () => {
     );
   });
 
+  it("maps frontmatter custom-field chips to param_filters", () => {
+    const result = chipsToCaseQueryParams([
+      { key: "environment", value: "staging" },
+      { key: "browser", value: "Chrome" },
+    ]);
+    expect(result.param_filters).toBe(
+      JSON.stringify([
+        { key: "environment", value: "staging" },
+        { key: "browser", value: "Chrome" },
+      ]),
+    );
+  });
+
   it("ignores malformed param chips", () => {
     expect(
       chipsToCaseQueryParams([

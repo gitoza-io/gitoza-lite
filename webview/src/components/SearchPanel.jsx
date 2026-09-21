@@ -14,6 +14,7 @@ import FilterSelect from "./FilterSelect";
 import ParamKeyValueComposer from "./ParamKeyValueComposer";
 import TagChipPicker from "./TagChipPicker";
 import { getTagColorClass } from "../utils/tagColor";
+import { optionsForKey } from "../utils/querySearch";
 import {
   chipsToFormState,
   emptyFilterForm,
@@ -28,6 +29,9 @@ const CHIP_COLORS =
 
 function buildSelectOptions(keyDef, filterOptions) {
   if (!keyDef) return [];
+  if (keyDef.type === "param-field") {
+    return optionsForKey(keyDef, filterOptions);
+  }
   const special = (keyDef.specialOptions ?? []).map((opt) => ({
     value: opt.value,
     label: opt.label || opt.value,
@@ -285,7 +289,7 @@ function SearchPanel({
       );
     }
 
-    if (keyDef.type === "enum" || keyDef.type === "user" || keyDef.type === "assignee") {
+    if (keyDef.type === "enum" || keyDef.type === "user" || keyDef.type === "assignee" || keyDef.type === "param-field") {
       const options = buildSelectOptions(keyDef, filterOptions);
       return (
         <FilterSelect

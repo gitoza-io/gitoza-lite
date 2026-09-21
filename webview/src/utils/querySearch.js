@@ -1,5 +1,36 @@
 import { TICKET_RELEASE_NONE } from "../constants/searchKeys";
+import {
+  collectParamsFromCases,
+  paramValuesForKey,
+  resolveCanonicalParamKey,
+} from "./caseFilters";
 import { itemMatchesEnum, itemMatchesQuery } from "./entityTreeSearch";
+
+/**
+ * Append catalog custom-field keys as frontmatter search keys (not a synthetic "Custom field" key).
+ * @param {Array} baseKeys
+ * @param {{ param_keys?: string[] }} [filterOptions]
+ * @returns {Array}
+ */
+export function withParamSearchKeys(baseKeys = [], filterOptions = {}) {
+  const base = Array.isArray(baseKeys) ? baseKeys : [];
+  const reserved = new Set(base.map((k) => String(k.key).toLowerCase()));
+  const dynamic = [];
+  for (const raw of filterOptions?.param_keys ?? []) {
+    const key = String(raw ?? "").trim();
+    if (!key) continue;
+    if (reserved.has(key.toLowerCase())) continue;
+    reserved.add(key.toLowerCase());
+    dynamic.push({
+      key,
+      label: key,
+      type: "param-field",
+      multi: false,
+      placeholder: "Select value…",
+    });
+  }
+  return dynamic.length ? [...base, ...dynamic] : base;
+}
 
 /**
  * Parse a query draft into a chip.
@@ -71,7 +102,7 @@ export function suggestKeys(draft, searchKeys = []) {
 /**
  * Resolve option list for a search key from static options + filterOptions.
  * @param {{ key: string, options?: Array<{value:string,label?:string}>, specialOptions?: Array, filterKey?: string, type?: string }} keyDef
- * @param {Record<string, string[]>} filterOptions
+ * @param {Record<string, unknown>} filterOptions
  * @returns {Array<{ value: string, label: string }>}
  */
 export function optionsForKey(keyDef, filterOptions = {}) {
@@ -82,6 +113,17 @@ export function optionsForKey(keyDef, filterOptions = {}) {
   }));
   if (keyDef.options?.length) {
     return [...special, ...keyDef.options.map((o) => ({ value: o.value, label: o.label || o.value }))];
+  }
+  if (keyDef.type === "param-field") {
+    const values = paramValuesForKey(
+      keyDef.key,
+      filterOptions.param_values_by_key ?? {},
+      filterOptions.param_keys ?? [],
+    );
+    return [
+      ...special,
+      ...values.map((v) => ({ value: String(v), label: String(v) })),
+    ];
   }
   const dynamicKey =
     keyDef.filterKey ||
@@ -97,7 +139,7 @@ export function optionsForKey(keyDef, filterOptions = {}) {
  * Suggest values for draft like `status: op` or `status:`.
  * @param {string} draft
  * @param {Array} searchKeys
- * @param {Record<string, string[]>} filterOptions
+ * @param {Record<string, unknown>} filterOptions
  * @returns {Array<{ value: string, label: string, completion: string }>}
  */
 export function suggestValues(draft, searchKeys = [], filterOptions = {}) {
@@ -149,7 +191,7 @@ function uniqueSorted(values) {
 }
 
 /**
- * @param {Array<{ tags?: string[], assigned_to?: string, release?: string, priority?: string }>} tickets
+ * @param {Array<{ tags?: string[], assigned_to?: string, release?: string, priority?: string, params?: Record<string, string> }>} tickets
  */
 export function collectTicketFilterOptions(tickets = []) {
   const tags = [];
@@ -162,11 +204,14 @@ export function collectTicketFilterOptions(tickets = []) {
     if (t.release) releases.push(t.release);
     if (t.priority) priorities.push(t.priority);
   }
+  const { param_keys, param_values_by_key } = collectParamsFromCases(tickets);
   return {
     tags: uniqueSorted(tags),
     assigned_to: uniqueSorted(assigned_to),
     releases: uniqueSorted(releases),
     priorities: uniqueSorted(priorities),
+    param_keys,
+    param_values_by_key,
   };
 }
 
@@ -181,14 +226,35 @@ export function collectWikiFilterOptions(pages = []) {
   return { tags: uniqueSorted(tags) };
 }
 
+function itemMatchesParamField(item, key, value, paramKeys = []) {
+  const params = item?.params && typeof item.params === "object" ? item.params : {};
+  const canonical = resolveCanonicalParamKey(key, paramKeys);
+  const needle = String(value ?? "").trim().toLowerCase();
+  if (!needle) return false;
+  for (const [rawKey, rawVal] of Object.entries(params)) {
+    if (String(rawKey).trim().toLowerCase() !== String(canonical).toLowerCase()) continue;
+    if (String(rawVal ?? "").trim().toLowerCase() === needle) return true;
+  }
+  return false;
+}
+
 /**
  * Match one item against AND of chips.
  * @param {Record<string, unknown>} item
  * @param {Array<{ key: string, value: string }>} chips
- * @param {{ queryFields?: string[] }} [opts]
+ * @param {{ queryFields?: string[], paramKeys?: string[], searchKeys?: Array<{ key: string, type?: string }> }} [opts]
  */
 export function itemMatchesSearchChips(item, chips, opts = {}) {
   const queryFields = opts.queryFields || ["title", "name"];
+  const paramKeys = opts.paramKeys ?? [];
+  const paramFieldKeys = new Set(
+    (opts.searchKeys || [])
+      .filter((k) => k?.type === "param-field")
+      .map((k) => String(k.key).toLowerCase()),
+  );
+  for (const k of paramKeys) {
+    paramFieldKeys.add(String(k).toLowerCase());
+  }
   if (!chips?.length) return true;
   if (!item) return false;
 
@@ -224,6 +290,17 @@ export function itemMatchesSearchChips(item, chips, opts = {}) {
     }
     if (key === "assigned_to") {
       if (!itemMatchesEnum(item, "assigned_to", value)) return false;
+      continue;
+    }
+    const isParamField =
+      paramFieldKeys.has(String(key).toLowerCase()) ||
+      (item.params &&
+        typeof item.params === "object" &&
+        Object.keys(item.params).some(
+          (k) => String(k).trim().toLowerCase() === String(key).toLowerCase(),
+        ));
+    if (isParamField) {
+      if (!itemMatchesParamField(item, key, value, paramKeys)) return false;
       continue;
     }
     if (!itemMatchesEnum(item, key, value)) return false;
