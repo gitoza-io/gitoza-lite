@@ -52,8 +52,9 @@
   --gitoza-accent-yellow: var(--vscode-charts-yellow, var(--vscode-editorWarning-foreground));
   --gitoza-accent-red: var(--vscode-errorForeground, var(--vscode-charts-red));
   --gitoza-accent-rose: var(--vscode-charts-red, var(--vscode-errorForeground));
-  --gitoza-accent-violet: var(--vscode-focusBorder, var(--vscode-button-background));
-  --gitoza-accent-purple: var(--vscode-button-background);
+  /* Prefer charts-purple — focusBorder is often low-contrast in Cursor Dark. */
+  --gitoza-accent-violet: var(--vscode-charts-purple, var(--vscode-charts-blue, var(--vscode-button-background)));
+  --gitoza-accent-purple: var(--vscode-charts-purple, var(--vscode-button-background));
   --gitoza-accent-fuchsia: var(--vscode-charts-purple, var(--vscode-button-background));
   --gitoza-accent-pink: var(--vscode-charts-red, var(--vscode-errorForeground));
 

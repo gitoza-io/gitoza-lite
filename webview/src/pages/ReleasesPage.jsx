@@ -85,19 +85,19 @@ const RELEASE_STATUS_FILTERS = [
     id: "open",
     label: "Open",
     Icon: Inbox,
-    iconClass: "text-blue-500 dark:text-blue-400",
+    iconClass: "text-blue-500 dark:text-blue-300",
   },
   {
     id: "shipped",
     label: "Shipped",
     Icon: Ship,
-    iconClass: "text-emerald-500 dark:text-emerald-400",
+    iconClass: "text-emerald-500 dark:text-emerald-300",
   },
   {
     id: "cancelled",
     label: "Cancelled",
     Icon: CircleSlash,
-    iconClass: "text-slate-500 dark:text-slate-400",
+    iconClass: "text-slate-500 dark:text-slate-200",
   },
 ];
 
@@ -106,31 +106,31 @@ const RELEASE_TICKET_STATUS_FILTERS = [
     id: "open",
     label: "Open",
     Icon: Inbox,
-    iconClass: "text-blue-500 dark:text-blue-400",
+    iconClass: "text-blue-500 dark:text-blue-300",
   },
   {
     id: "in_progress",
     label: "In progress",
     Icon: Timer,
-    iconClass: "text-amber-500 dark:text-amber-400",
+    iconClass: "text-amber-500 dark:text-amber-300",
   },
   {
     id: "in_testing",
     label: "In testing",
     Icon: FlaskConical,
-    iconClass: "text-violet-500 dark:text-violet-400",
+    iconClass: "text-violet-500 dark:text-violet-300",
   },
   {
     id: "blocked",
     label: "Blocked",
     Icon: OctagonAlert,
-    iconClass: "text-red-500 dark:text-red-400",
+    iconClass: "text-red-500 dark:text-red-300",
   },
   {
     id: "done",
     label: "Done",
     Icon: CircleCheck,
-    iconClass: "text-emerald-500 dark:text-emerald-400",
+    iconClass: "text-emerald-500 dark:text-emerald-300",
   },
 ];
 
