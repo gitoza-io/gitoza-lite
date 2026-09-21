@@ -6,7 +6,6 @@ import RunPaginatedCaseList from "../components/RunPaginatedCaseList";
 import CaseDetailView from "../components/CaseDetailView";
 import DetailPanelEmpty from "../components/DetailPanelEmpty";
 import DetailPanelLoading from "../components/DetailPanelLoading";
-import AddRunCasesModal from "../components/AddRunCasesModal";
 import UnsavedChangesDialog from "../components/UnsavedChangesDialog";
 import ContextMenu from "../components/ContextMenu";
 import SidebarSection from "../components/SidebarSection";
@@ -15,6 +14,7 @@ import TreeToolbar from "../components/TreeToolbar";
 import { useConfirm } from "../components/ConfirmProvider";
 import { useRunResultDraft } from "../hooks/useRunResultDraft";
 import { useRunBrowseState } from "../hooks/useRunBrowseState";
+import AddCasesToRunPage from "./AddCasesToRunPage";
 import {
   addRunCases,
   createRun,
@@ -39,7 +39,6 @@ import {
   parseRunTreePath,
 } from "../utils/runCaseTree";
 import { displayNameFromSanitized, sanitizeNameForPath } from "../utils/sanitize";
-import { normalizeCaseFilePath } from "../utils/casePickerSelection";
 
 const ACTIVE_REPO = "vscode";
 
@@ -60,7 +59,8 @@ export default function TestRunPage({
   const [caseDetailLoading, setCaseDetailLoading] = useState(false);
   const [creatingRun, setCreatingRun] = useState(false);
   const [runsReady, setRunsReady] = useState(false);
-  const [showAddCasesModal, setShowAddCasesModal] = useState(false);
+  const [addCasesRunId, setAddCasesRunId] = useState(null);
+  const [addCasesRunName, setAddCasesRunName] = useState(null);
   const [caseListPage, setCaseListPage] = useState(1);
   const [unsavedDialog, setUnsavedDialog] = useState(null);
   const [runContextMenu, setRunContextMenu] = useState(null);
@@ -301,16 +301,6 @@ export default function TestRunPage({
 
   const folderLabel = findRunFolderDisplayName(unifiedRunTree, selectedFolderPath);
 
-  const existingRunPaths = useMemo(
-    () =>
-      new Set(
-        runCases
-          .map((c) => normalizeCaseFilePath(c.file_path))
-          .filter(Boolean),
-      ),
-    [runCases],
-  );
-
   const guardUnsaved = useCallback((continueAction) => {
     if (!isDirtyRef.current) {
       continueAction();
@@ -469,21 +459,36 @@ export default function TestRunPage({
     }
   }, [save, loadRuns]);
 
+  const closeAddCasesPicker = useCallback(() => {
+    setAddCasesRunId(null);
+    setAddCasesRunName(null);
+  }, []);
+
   const handleAddCases = useCallback(
-    (paths) => {
-      const performAdd = async () => {
-        if (!selectedRunId) return;
-        const detail = await addRunCases(selectedRunId, paths);
+    async (paths) => {
+      const runId = addCasesRunId ?? selectedRunId;
+      if (!runId) return;
+      const detail = await addRunCases(runId, paths);
+      if (runId === selectedRunId) {
         resetFromServer(detail);
-        setCachedRunDetails((prev) => ({ ...prev, [selectedRunId]: detail }));
-        setShowAddCasesModal(false);
-        await loadRuns();
-      };
+      }
+      setCachedRunDetails((prev) => ({ ...prev, [runId]: detail }));
+      closeAddCasesPicker();
+      await loadRuns();
+    },
+    [addCasesRunId, selectedRunId, resetFromServer, loadRuns, closeAddCasesPicker],
+  );
+
+  const openAddCasesPicker = useCallback(
+    (runId, runName) => {
+      if (!runId || !hasCasesRoot) return;
       guardUnsaved(() => {
-        void performAdd();
+        setSelectedRunId(runId);
+        setAddCasesRunId(runId);
+        setAddCasesRunName(runName ?? null);
       });
     },
-    [selectedRunId, resetFromServer, loadRuns, guardUnsaved],
+    [guardUnsaved, hasCasesRoot],
   );
 
   const handleRemoveCase = useCallback(
@@ -518,12 +523,28 @@ export default function TestRunPage({
     [handleRemoveCase],
   );
 
-  const openAddCasesModal = useCallback(() => {
-    guardUnsaved(() => setShowAddCasesModal(true));
-  }, [guardUnsaved]);
-
   const selectedRun = displayRuns.find((r) => r.run_id === selectedRunId);
   const listTitle = folderLabel ?? selectedRun?.title ?? selectedRun?.run_id ?? null;
+
+  if (addCasesRunId) {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <AddCasesToRunPage
+          runId={addCasesRunId}
+          runName={addCasesRunName}
+          onDone={handleAddCases}
+          onCancel={closeAddCasesPicker}
+        />
+        <UnsavedChangesDialog
+          open={Boolean(unsavedDialog)}
+          saving={saving}
+          onSave={() => void handleUnsavedSave()}
+          onDiscard={handleUnsavedDiscard}
+          onCancel={handleUnsavedCancel}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -606,7 +627,12 @@ export default function TestRunPage({
                       ? "Create a test project before adding cases"
                       : "Add cases from repository"
                   }
-                  onClick={openAddCasesModal}
+                  onClick={() =>
+                    openAddCasesPicker(
+                      selectedRunId,
+                      selectedRun?.title ?? selectedRun?.run_id ?? null,
+                    )
+                  }
                   className="inline-flex shrink-0 items-center gap-1 rounded-ui border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -673,13 +699,6 @@ export default function TestRunPage({
           </div>
         }
       />
-      {showAddCasesModal && selectedRunId ? (
-        <AddRunCasesModal
-          existingPaths={existingRunPaths}
-          onConfirm={handleAddCases}
-          onClose={() => setShowAddCasesModal(false)}
-        />
-      ) : null}
       {runContextMenu ? (
         <ContextMenu
           open
@@ -688,9 +707,25 @@ export default function TestRunPage({
           onClose={() => setRunContextMenu(null)}
           items={[
             {
+              label: "Add cases",
+              icon: Plus,
+              disabled: !hasCasesRoot,
+              title: !hasCasesRoot
+                ? "Create a test project before adding cases"
+                : undefined,
+              onClick: () => {
+                const run = displayRuns.find((r) => r.run_id === runContextMenu.runId);
+                openAddCasesPicker(
+                  runContextMenu.runId,
+                  run?.title ?? run?.run_id ?? null,
+                );
+                setRunContextMenu(null);
+              },
+            },
+            {
               label: "Delete run",
               icon: Trash2,
-              danger: true,
+              variant: "danger",
               onClick: () => {
                 handleDeleteRun(runContextMenu.runId);
                 setRunContextMenu(null);
