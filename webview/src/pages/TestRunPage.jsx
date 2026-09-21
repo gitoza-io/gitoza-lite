@@ -619,25 +619,6 @@ export default function TestRunPage({
                   <Save className="h-3.5 w-3.5" />
                   {saving ? "Saving…" : "Save"}
                 </button>
-                <button
-                  type="button"
-                  disabled={!selectedRunId || !hasCasesRoot}
-                  title={
-                    !hasCasesRoot
-                      ? "Create a test project before adding cases"
-                      : "Add cases from repository"
-                  }
-                  onClick={() =>
-                    openAddCasesPicker(
-                      selectedRunId,
-                      selectedRun?.title ?? selectedRun?.run_id ?? null,
-                    )
-                  }
-                  className="inline-flex shrink-0 items-center gap-1 rounded-ui border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add cases
-                </button>
               </div>
             </div>
             <RunPaginatedCaseList
@@ -658,7 +639,7 @@ export default function TestRunPage({
                   ? "Loading…"
                   : selectedFolderPath
                     ? "No cases in this folder"
-                    : "No cases in this run. Use Add cases to include tests from the repository."
+                    : "No cases in this run. Right-click a run to add cases from the repository."
               }
               loading={runDetailLoading}
               defaultRunId={selectedRunId}
