@@ -1,0 +1,45 @@
+---
+title: Auto-save flushes before Sync and view switch
+tags:
+  - auto-save
+  - sync
+status: active
+priority: medium
+---
+
+## Description
+
+Verify pending debounced drafts are flushed before Sync / capture-pending-changes and before switching sidebar views, so disk matches in-memory edits.
+
+## Page object
+
+- **Nav.Tickets** — sidebar Tickets icon
+- **Nav.Wiki** — sidebar Wiki icon
+- **Tickets.Detail** — ticket editor
+- **Tickets.BodyEditor** — Markdown body editor
+- **Workflow.Sync** — Sync / capture-pending-changes control in the toolbar
+
+## Steps
+
+1. Click **Nav.Tickets** and open a ticket in edit mode.
+2. Edit **Tickets.BodyEditor** with marker `AS-003 sync`.
+3. Within 1 second (before debounce), trigger **Workflow.Sync**.
+4. After Sync completes, reopen the same ticket and confirm the marker is present on disk / in the editor.
+5. Edit the body again with marker `AS-003 nav`.
+6. Within 1 second, click **Nav.Wiki** (view switch), then return via **Nav.Tickets** and reopen the ticket.
+
+## Expected results
+
+- Body contains `AS-003 sync` after Sync without waiting the full debounce.
+- Body contains `AS-003 nav` after the view round-trip.
+- Sync / view switch does not drop the in-memory draft.
+
+## Actual results
+
+_(Record outcomes during execution.)_
+
+## Environment
+
+- VS Code / Cursor version:
+- Extension version / build:
+- OS:

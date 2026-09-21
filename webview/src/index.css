@@ -774,3 +774,11 @@ body.vscode-host pre code {
   outline-offset: 0 !important;
   box-shadow: none !important;
 }
+
+/* VS Code/Cursor :focus { outline-color: var(--vscode-focusBorder) } recolors
+   Tailwind outline-none (2px solid transparent) into a visible orange frame. */
+.outline-none:focus,
+.outline-none:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+}

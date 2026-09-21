@@ -1,0 +1,45 @@
+---
+title: Case editor auto-save in edit mode
+status: active
+priority: medium
+tags: [auto-save, case]
+---
+
+## Description
+
+Verify Test Repository case edit mode auto-saves body changes after ~2s idle (create mode still requires explicit Create).
+
+## Page object
+
+- **Nav.TestRepository** — sidebar Test Repository icon
+- **Case.ProjectColumn** — projects column
+- **Case.SuiteColumn** — suites column
+- **Case.CaseColumn** — cases column
+- **Case.Detail** — case editor
+- **Case.BodyEditor** — Markdown body editor
+- **Case.EditToggle** — edit / view mode control
+
+## Steps
+
+1. Click **Nav.TestRepository**.
+2. Select project `gitoza-lite`, suite `07-auto-save`, case `AS-001` (or any existing case).
+3. Enter edit mode via **Case.EditToggle** (do not use Create).
+4. Append a unique marker to **Case.BodyEditor** (e.g. `AS-004 marker`).
+5. Wait ~2 seconds without clicking Save.
+6. Switch to another case, then reopen the edited case.
+
+## Expected results
+
+- Marker remains in the case body after reopen.
+- Create flow (if tried separately) still requires an explicit Create action — auto-save does not create a new case by itself.
+- Case file under `.gitoza-lite/test/cases/gitoza-lite/` contains the marker.
+
+## Actual results
+
+_(Record outcomes during execution.)_
+
+## Environment
+
+- VS Code / Cursor version:
+- Extension version / build:
+- OS:

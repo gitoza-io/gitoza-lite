@@ -1,0 +1,40 @@
+---
+title: Switching entity flushes pending auto-save
+status: active
+priority: medium
+tags: [auto-save, tickets]
+---
+
+## Description
+
+Verify leaving a dirty editor before the debounce timer fires still persists the previous entity (flush on key change).
+
+## Page object
+
+- **Nav.Tickets** — sidebar Tickets icon
+- **Tickets.List** — ticket list
+- **Tickets.Detail** — ticket editor
+- **Tickets.TitleField** — title input
+
+## Steps
+
+1. Click **Nav.Tickets** and open ticket A in edit mode.
+2. Change **Tickets.TitleField** on ticket A to a unique marker (e.g. `AS-002-A`).
+3. Within 1 second (before debounce), select a different ticket B from **Tickets.List**.
+4. Immediately reopen ticket A.
+
+## Expected results
+
+- Ticket A’s title shows `AS-002-A` after reopen (flushed on switch, not lost).
+- Ticket B is not overwritten with ticket A’s draft content.
+- No error toast / footer error from a wrong-file write.
+
+## Actual results
+
+_(Record outcomes during execution.)_
+
+## Environment
+
+- VS Code / Cursor version:
+- Extension version / build:
+- OS:
