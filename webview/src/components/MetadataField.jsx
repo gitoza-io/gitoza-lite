@@ -7,7 +7,7 @@ export const METADATA_LABEL_CLS =
 export const METADATA_VALUE_CLS =
   "truncate text-[13px] font-bold leading-tight";
 
-export const METADATA_VALUE_DEFAULT_CLS = "text-slate-900 dark:text-slate-50";
+export const METADATA_VALUE_DEFAULT_CLS = "text-ink";
 
 export const METADATA_VALUE_SLOT_CLS =
   "flex min-h-[1.375rem] flex-1 items-center min-w-0";

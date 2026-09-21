@@ -49,6 +49,7 @@ export const vscodeColors = {
   panel: vscodeColor("--gitoza-panel"),
   ink: vscodeColor("--gitoza-ink"),
   muted: vscodeColor("--gitoza-muted"),
+  reading: vscodeColor("--gitoza-prose"),
   "list-selected": vscodeColor("--gitoza-list-selected"),
   "list-hover": vscodeColor("--gitoza-list-hover"),
 };

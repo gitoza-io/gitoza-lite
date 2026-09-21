@@ -30,11 +30,11 @@ function TicketDetailView({ ticket, ticketIdRowExtra = null }) {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <header className="shrink-0 border-b border-slate-200 px-3 py-3 dark:border-slate-700">
-        <h2 className="text-lg font-bold leading-snug text-slate-900 dark:text-slate-100">
+        <h2 className="text-lg font-bold leading-snug text-ink">
           {ticket.title || "Untitled ticket"}
         </h2>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          <span className="font-mono text-sm font-normal tracking-wide text-slate-800 dark:text-slate-100">
+          <span className="font-mono text-sm font-normal tracking-wide text-ink">
             {ticket.ticket_id || "—"}
           </span>
           {ticketIdRowExtra}

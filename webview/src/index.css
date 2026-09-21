@@ -30,6 +30,8 @@
   /* Semantic tokens */
   --gitoza-ink: var(--vscode-foreground);
   --gitoza-muted: var(--vscode-descriptionForeground);
+  /* Long-form markdown / detail body — same primary as UI chrome (not editor-fg) */
+  --gitoza-prose: var(--vscode-foreground);
   --gitoza-list-hover: var(--vscode-list-hoverBackground);
   --gitoza-list-selected: var(--vscode-list-inactiveSelectionBackground);
   --gitoza-primary: var(--vscode-button-background);
@@ -568,6 +570,11 @@ html.dark body:not(.vscode-host) {
   --vscode-debugTokenExpression-string: #86efac;
   --vscode-debugTokenExpression-number: #fcd34d;
   --vscode-debugTokenExpression-boolean: #7dd3fc;
+}
+
+/* Detail markdown body: editor foreground for reading contrast (VS Code token). */
+.prose-rex {
+  color: var(--gitoza-prose);
 }
 
 /* Case body code blocks: VS Code token colors */

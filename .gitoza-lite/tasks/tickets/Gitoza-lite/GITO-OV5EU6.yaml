@@ -1,7 +1,7 @@
 ---
 title: Keep icons and UI readable across dark mode and VS Code themes
 type: task
-status: open
+status: done
 priority: medium
 release: Gitoza-lite/0-3-1
 ---

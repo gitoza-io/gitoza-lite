@@ -584,7 +584,7 @@ function CaseEditorPanel({
         />
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <span className="font-mono text-sm font-normal tracking-wide text-slate-800 dark:text-slate-100">
+        <span className="font-mono text-sm font-normal tracking-wide text-ink">
           {caseId || "—"}
         </span>
         {archivedByPath ? (

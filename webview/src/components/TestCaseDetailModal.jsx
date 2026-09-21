@@ -89,10 +89,10 @@ export function renderMarkdown(text, options = {}) {
       const level = headingMatch[1].length;
       const content = headingMatch[2];
       const cls = level === 1
-        ? "mb-3 mt-6 text-lg font-bold text-slate-900 dark:text-slate-100"
+        ? "mb-3 mt-6 text-lg font-bold text-reading"
         : level === 2
-          ? "mb-2 mt-5 text-base font-semibold text-slate-800 dark:text-slate-200"
-          : "mb-1.5 mt-4 text-sm font-semibold text-slate-700 dark:text-slate-300";
+          ? "mb-2 mt-5 text-base font-semibold text-reading"
+          : "mb-1.5 mt-4 text-sm font-semibold text-reading";
       elements.push(<div key={k()} className={cls}>{inlineFormat(content)}</div>);
       i++; continue;
     }
@@ -105,7 +105,7 @@ export function renderMarkdown(text, options = {}) {
         i++;
       }
       elements.push(
-        <blockquote key={k()} className="my-3 rounded-r-lg border-l-4 border-indigo-400 bg-indigo-50/60 py-2.5 pl-4 pr-3 text-sm text-slate-700 dark:border-indigo-500/60 dark:bg-indigo-500/10 dark:text-slate-300">
+        <blockquote key={k()} className="my-3 rounded-r-lg border-l-4 border-indigo-400 bg-indigo-50/60 py-2.5 pl-4 pr-3 text-sm text-reading dark:border-indigo-500/60 dark:bg-indigo-500/10">
           {bqLines.map((l, j) => <p key={j} className="leading-relaxed">{inlineFormat(l)}</p>)}
         </blockquote>
       );
@@ -120,7 +120,7 @@ export function renderMarkdown(text, options = {}) {
         i++;
       }
       elements.push(
-        <ol key={k()} className="my-2 list-decimal space-y-1 pl-6 text-sm text-slate-800 marker:text-slate-400 dark:text-slate-200 dark:marker:text-slate-500">
+        <ol key={k()} className="my-2 list-decimal space-y-1 pl-6 text-sm text-reading marker:text-muted">
           {items.map((item, j) => <li key={j} className="leading-relaxed">{inlineFormat(item)}</li>)}
         </ol>
       );
@@ -142,11 +142,11 @@ export function renderMarkdown(text, options = {}) {
               const checked = /^\[[xX]\]\s/.test(item);
               const label = item.replace(/^\[[ xX]\]\s/, "");
               return (
-                <li key={j} className="flex items-start gap-2.5 leading-relaxed text-slate-800 dark:text-slate-200">
+                <li key={j} className="flex items-start gap-2.5 leading-relaxed text-reading">
                   <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${checked ? "border-indigo-500 bg-indigo-500 text-white dark:border-indigo-400 dark:bg-indigo-500" : "border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800"}`}>
                     {checked ? "✓" : ""}
                   </span>
-                  <span className={checked ? "text-slate-500 line-through dark:text-slate-400" : ""}>{inlineFormat(label)}</span>
+                  <span className={checked ? "text-muted line-through" : ""}>{inlineFormat(label)}</span>
                 </li>
               );
             })}
@@ -154,7 +154,7 @@ export function renderMarkdown(text, options = {}) {
         );
       } else {
         elements.push(
-          <ul key={k()} className="my-2 list-disc space-y-1 pl-6 text-sm text-slate-800 marker:text-slate-400 dark:text-slate-200 dark:marker:text-slate-500">
+          <ul key={k()} className="my-2 list-disc space-y-1 pl-6 text-sm text-reading marker:text-muted">
             {items.map((item, j) => <li key={j} className="leading-relaxed">{inlineFormat(item)}</li>)}
           </ul>
         );
@@ -215,7 +215,7 @@ export function renderMarkdown(text, options = {}) {
 
     // Paragraph (default)
     elements.push(
-      <p key={k()} className="my-2 text-sm leading-relaxed text-slate-800 dark:text-slate-200">{inlineFormat(line)}</p>
+      <p key={k()} className="my-2 text-sm leading-relaxed text-reading">{inlineFormat(line)}</p>
     );
     i++;
   }
@@ -236,7 +236,7 @@ function inlineFormat(text) {
     if (codeMatch) {
       if (codeMatch[1]) parts.push(inlineFormat(codeMatch[1]));
       parts.push(
-        <code key={`ic-${key++}`} className="rounded bg-slate-200/80 px-1.5 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700/60 dark:text-slate-300">
+        <code key={`ic-${key++}`} className="rounded bg-slate-200/80 px-1.5 py-0.5 font-mono text-xs text-reading dark:bg-slate-700/60">
           {codeMatch[2]}
         </code>
       );
