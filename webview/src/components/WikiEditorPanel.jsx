@@ -13,7 +13,7 @@ import StickyThenScroll from "./StickyThenScroll";
 import WikiDetailView from "./WikiDetailView";
 import Tooltip from "./Tooltip";
 import { useMarkdownEditor } from "../hooks/useMarkdownEditor";
-import { getTagColorClass } from "../utils/tagColor";
+import TagsInput from "./TagsInput";
 
 const inlineCls =
   "bg-transparent border-0 border-b border-transparent outline-none transition-colors focus:border-indigo-400 dark:focus:border-indigo-500";
@@ -275,47 +275,13 @@ function WikiEditorPanel({
           </select>
         </MetadataFieldEdit>
         <MetadataFieldEdit label="Tags" className="min-w-[12rem]">
-          <div className="relative min-w-[12rem]">
-            <div className="flex min-h-[2rem] flex-wrap items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs dark:border-slate-500 dark:bg-slate-950">
-              {displayTags.map((tag) => (
-                <span
-                  key={tag}
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${getTagColorClass(
-                    tag,
-                  )}`}
-                >
-                  <span>{tag}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTag(tag)}
-                    className="inline-flex h-3 w-3 items-center justify-center rounded-full text-[10px] text-slate-500 hover:bg-slate-200 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100"
-                    aria-label={`Remove tag ${tag}`}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === ",") {
-                    e.preventDefault();
-                    handleAddTag(tagInput);
-                  } else if (e.key === "Backspace" && !tagInput) {
-                    const last = displayTags[displayTags.length - 1];
-                    if (last) handleRemoveTag(last);
-                  }
-                }}
-                onBlur={() => handleAddTag(tagInput)}
-                placeholder={
-                  displayTags.length === 0 ? "Add tags…" : "Type and press Enter"
-                }
-                className="min-w-[6rem] flex-1 border-0 bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400 dark:text-slate-200 dark:placeholder:text-slate-500"
-              />
-            </div>
-          </div>
+          <TagsInput
+            tags={displayTags}
+            inputValue={tagInput}
+            onInputChange={setTagInput}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+          />
         </MetadataFieldEdit>
       </div>
     </header>

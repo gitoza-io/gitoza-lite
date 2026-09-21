@@ -762,3 +762,15 @@ body.vscode-host pre code {
 .main-content-scroll::-webkit-scrollbar-thumb:hover {
   background-color: var(--vscode-scrollbarSlider-hoverBackground);
 }
+
+/* Tags chip input: hide native / webview focus chrome on the inner field. */
+.tag-inline-input {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.tag-inline-input:focus,
+.tag-inline-input:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+}
