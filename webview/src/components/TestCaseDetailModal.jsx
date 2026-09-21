@@ -178,14 +178,14 @@ export function renderMarkdown(text, options = {}) {
           i++;
         }
         elements.push(
-          <div key={k()} className="my-3 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-600/80">
-            <table className="min-w-full border-collapse text-sm text-slate-800 dark:text-slate-200">
+          <div key={k()} className="my-3 overflow-x-auto border border-slate-500 dark:border-slate-500">
+            <table className="min-w-full border-collapse text-sm text-ink dark:text-slate-100">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-800/80">
+                <tr className="bg-slate-50 dark:bg-slate-800/80">
                   {headerCells.map((h, hi) => (
                     <th
                       key={hi}
-                      className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300"
+                      className="border border-slate-500 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-ink dark:border-slate-500 dark:text-slate-100"
                     >
                       {inlineFormat(h)}
                     </th>
@@ -194,12 +194,12 @@ export function renderMarkdown(text, options = {}) {
               </thead>
               <tbody>
                 {bodyRows.map((row, ri) => (
-                  <tr
-                    key={ri}
-                    className="border-b border-slate-100 last:border-0 dark:border-slate-700/80"
-                  >
+                  <tr key={ri}>
                     {row.map((cell, ci) => (
-                      <td key={ci} className="px-3 py-2 align-top text-sm">
+                      <td
+                        key={ci}
+                        className="border border-slate-500 px-3 py-2 align-top text-sm dark:border-slate-500"
+                      >
                         {inlineFormat(cell)}
                       </td>
                     ))}
