@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Box,
@@ -98,6 +98,8 @@ export default function TicketsPage({
   const [detail, setDetail] = useState(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState(null);
+  const selectedPathRef = useRef(null);
+  selectedPathRef.current = selectedPath;
   const [contextMenu, setContextMenu] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchChips, setSearchChips] = useState([]);
@@ -130,24 +132,30 @@ export default function TicketsPage({
   useEffect(() => {
     return onTicketsUpdated(() => {
       void reload();
-      if (selectedPath) {
-        void getTicketDetail(selectedPath).then(setDetail).catch(() => {});
+      const path = selectedPathRef.current;
+      if (path) {
+        void getTicketDetail(path)
+          .then((d) => {
+            if (selectedPathRef.current === path) setDetail(d);
+          })
+          .catch(() => {});
       }
     });
-  }, [reload, selectedPath]);
+  }, [reload]);
 
   useEffect(() => {
     if (!selectedPath) {
       setDetail(null);
       return;
     }
+    const path = selectedPath;
     let cancelled = false;
-    void getTicketDetail(selectedPath)
+    void getTicketDetail(path)
       .then((d) => {
-        if (!cancelled) setDetail(d);
+        if (!cancelled && selectedPathRef.current === path) setDetail(d);
       })
       .catch((e) => {
-        if (!cancelled) {
+        if (!cancelled && selectedPathRef.current === path) {
           setError(e instanceof Error ? e.message : "Failed to load ticket");
         }
       });
@@ -312,13 +320,17 @@ export default function TicketsPage({
     [reload, onTicketsRootInitialized],
   );
 
-  const handleSave = async (payload) => {
-    if (!selectedPath) return;
-    await updateTicket(selectedPath, payload);
-    setEditing(false);
-    setDetail(await getTicketDetail(selectedPath));
-    await reload();
-  };
+  const handleSave = useCallback(
+    async (filePath, payload) => {
+      if (!filePath) return;
+      await updateTicket(filePath, payload);
+      if (selectedPathRef.current === filePath) {
+        setDetail(await getTicketDetail(filePath));
+      }
+      await reload();
+    },
+    [reload],
+  );
 
   const toggleProject = (name) => {
     setExpanded((prev) => {
@@ -632,7 +644,6 @@ export default function TicketsPage({
                                       }
                                       onClick={() => {
                                         setSelectedProject(p.name);
-                                        setEditing(false);
                                         setSelectedPath(t.file_path);
                                       }}
                                     />

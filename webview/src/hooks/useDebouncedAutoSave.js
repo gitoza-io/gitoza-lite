@@ -54,27 +54,34 @@ export function useDebouncedAutoSave({
   const draftSerialized = JSON.stringify(draft);
 
   const runSaveChain = useCallback(() => {
-    saveTailRef.current = saveTailRef.current.then(async () => {
+    const run = saveTailRef.current.then(async () => {
       let iterations = 0;
       while (iterations < MAX_SAVE_CHAIN) {
         iterations += 1;
         const norm = normalizeRef.current;
-        const a = JSON.stringify(norm(draftRef.current));
+        const draftToSave = draftRef.current;
+        const a = JSON.stringify(norm(draftToSave));
         const b = JSON.stringify(norm(persistedRef.current));
         if (a === b) return;
         if (!silentRef.current) setSaving(true);
         try {
-          await saveRef.current(draftRef.current);
+          await saveRef.current(draftToSave);
         } catch (e) {
           console.warn("useDebouncedAutoSave: save failed", e);
-          return;
+          throw e;
         } finally {
           if (!silentRef.current) setSaving(false);
         }
+        // Stop if draft did not change during the save. Parent will refresh
+        // `persisted` asynchronously; re-save only when the user edited mid-flight.
+        const after = JSON.stringify(norm(draftRef.current));
+        if (after === a) return;
       }
       console.warn("useDebouncedAutoSave: max save chain iterations reached");
     });
-    return saveTailRef.current;
+    // Keep the queue healthy after a rejection so later saves can enqueue.
+    saveTailRef.current = run.catch(() => {});
+    return run;
   }, []);
 
   /** Immediately persist the current draft if it differs from persisted. */
@@ -85,9 +92,7 @@ export function useDebouncedAutoSave({
     const a = JSON.stringify(norm(draftRef.current));
     const b = JSON.stringify(norm(persistedRef.current));
     if (a !== b) {
-      return runSaveChain().catch((e) => {
-        console.warn("useDebouncedAutoSave: flush failed", e);
-      });
+      return runSaveChain();
     }
     return Promise.resolve();
   }, [runSaveChain]);
@@ -124,7 +129,9 @@ export function useDebouncedAutoSave({
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
-      runSaveChain().catch((e) => console.warn("useDebouncedAutoSave: debounced save failed", e));
+      runSaveChain().catch((e) =>
+        console.warn("useDebouncedAutoSave: debounced save failed", e),
+      );
     }, delayMs);
 
     return () => {

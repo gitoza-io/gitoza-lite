@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ChevronDown,
@@ -293,6 +293,8 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
   const [detail, setDetail] = useState(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState(null);
+  const selectedPathRef = useRef(null);
+  selectedPathRef.current = selectedPath;
   const [contextMenu, setContextMenu] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchChips, setSearchChips] = useState([]);
@@ -317,24 +319,30 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
   useEffect(() => {
     return onWikiUpdated(() => {
       void reload();
-      if (selectedPath) {
-        void getWikiDetail(selectedPath).then(setDetail).catch(() => {});
+      const path = selectedPathRef.current;
+      if (path) {
+        void getWikiDetail(path)
+          .then((d) => {
+            if (selectedPathRef.current === path) setDetail(d);
+          })
+          .catch(() => {});
       }
     });
-  }, [reload, selectedPath]);
+  }, [reload]);
 
   useEffect(() => {
     if (!selectedPath) {
       setDetail(null);
       return;
     }
+    const path = selectedPath;
     let cancelled = false;
-    void getWikiDetail(selectedPath)
+    void getWikiDetail(path)
       .then((d) => {
-        if (!cancelled) setDetail(d);
+        if (!cancelled && selectedPathRef.current === path) setDetail(d);
       })
       .catch((e) => {
-        if (!cancelled) {
+        if (!cancelled && selectedPathRef.current === path) {
           setError(e instanceof Error ? e.message : "Failed to load page");
         }
       });
@@ -524,13 +532,17 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
     [reload, onWikiRootInitialized, selectedDir],
   );
 
-  const handleSave = async (payload) => {
-    if (!selectedPath) return;
-    await updateWikiPage(selectedPath, payload);
-    setEditing(false);
-    setDetail(await getWikiDetail(selectedPath));
-    await reload();
-  };
+  const handleSave = useCallback(
+    async (filePath, payload) => {
+      if (!filePath) return;
+      await updateWikiPage(filePath, payload);
+      if (selectedPathRef.current === filePath) {
+        setDetail(await getWikiDetail(filePath));
+      }
+      await reload();
+    },
+    [reload],
+  );
 
   const toggleDir = (dir) => {
     setExpanded((prev) => {
@@ -645,7 +657,6 @@ export default function WikiPage({ hasWikiRoot, onWikiRootInitialized }) {
             onSelectDir={selectDir}
             onSelectPage={(filePath, dir) => {
               setSelectedDir(dir);
-              setEditing(false);
               setSelectedPath(filePath);
             }}
             onFolderContextMenu={openFolderContextMenu}

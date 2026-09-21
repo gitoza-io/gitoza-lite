@@ -828,7 +828,7 @@ function TestRepository({
       storageSyncConfigured={storageSyncConfigured}
       onOpenStorageSyncSettings={onOpenStorageSyncSettings}
       gitProfileVersion={gitProfileVersion}
-      manualSave={vscodeMode}
+      manualSave={false}
       emptyTitle={
         !tree?.length
           ? "Create a project to get started"

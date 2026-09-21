@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eye, Pencil, Rocket, Save } from "lucide-react";
+import { Eye, Pencil, Rocket } from "lucide-react";
 import DetailPanel from "./DetailPanel";
 import DetailPanelEmpty from "./DetailPanelEmpty";
 import LiveMarkdownEditor from "./LiveMarkdownEditor";
@@ -13,7 +13,10 @@ import {
 import StickyThenScroll from "./StickyThenScroll";
 import ReleaseDetailView from "./ReleaseDetailView";
 import Tooltip from "./Tooltip";
+import { DEBOUNCE_MS } from "../constants/autoSave";
+import { useDebouncedAutoSave } from "../hooks/useDebouncedAutoSave";
 import { useMarkdownEditor } from "../hooks/useMarkdownEditor";
+import { registerAutoSaveFlush } from "../utils/autoSaveFlushRegistry";
 
 const inlineCls =
   "bg-transparent border-0 border-b border-transparent outline-none transition-colors focus:border-indigo-400 dark:focus:border-indigo-500";
@@ -24,8 +27,14 @@ const RELEASE_STATUS_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
+const normalizeReleaseDraft = (d) => ({
+  name: (d.name || "").trim(),
+  status: (d.status || "open").trim().toLowerCase(),
+  body: (d.body || "").trim(),
+});
+
 /**
- * Release detail / edit panel — mirrors TicketEditorPanel (manual save + LiveMarkdownEditor).
+ * Release detail / edit panel — debounced auto-save + LiveMarkdownEditor.
  */
 function ReleaseEditorPanel({
   releaseDetail = null,
@@ -40,7 +49,6 @@ function ReleaseEditorPanel({
   const [name, setName] = useState("");
   const [status, setStatus] = useState("open");
   const [body, setBody] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [measuredBodyHeight, setMeasuredBodyHeight] = useState(null);
   const [formSyncedPath, setFormSyncedPath] = useState(null);
@@ -102,6 +110,15 @@ function ReleaseEditorPanel({
     [name, status, body],
   );
 
+  const persistedSnapshot = useMemo(
+    () => ({
+      name: releaseDetail?.name ?? "",
+      status: (releaseDetail?.status || "open").toLowerCase(),
+      body: releaseDetail?.body ?? "",
+    }),
+    [releaseDetail],
+  );
+
   const buildSavePayload = useCallback(
     (d) => ({
       name: d.name.trim(),
@@ -111,24 +128,48 @@ function ReleaseEditorPanel({
     [],
   );
 
-  const handleSaveDraft = useCallback(async () => {
-    if (!releaseDetailReady || !selectedReleaseFilePath) return;
-    if (!draft.name.trim()) {
-      setError("Release name is required");
-      return;
-    }
-    setError("");
-    setLoading(true);
+  const handleAutoSave = useCallback(
+    async (d) => {
+      if (!selectedReleaseFilePath) return;
+      if (!(d.name || "").trim()) {
+        setError("Release name is required");
+        return;
+      }
+      setError("");
+      try {
+        await onSave(selectedReleaseFilePath, buildSavePayload(d));
+      } catch (err) {
+        setError(err?.message || "Save failed");
+        throw err;
+      }
+    },
+    [buildSavePayload, onSave, selectedReleaseFilePath],
+  );
+
+  const { flush } = useDebouncedAutoSave({
+    enabled: isEditing && releaseDetailReady,
+    key: selectedReleaseFilePath,
+    draft,
+    persisted: persistedSnapshot,
+    normalize: normalizeReleaseDraft,
+    save: handleAutoSave,
+    delayMs: DEBOUNCE_MS,
+    silent: true,
+  });
+
+  useEffect(() => registerAutoSaveFlush(flush), [flush]);
+
+  const handleView = useCallback(async () => {
     try {
-      await onSave(buildSavePayload(draft));
-    } catch (err) {
-      setError(err?.message || "Save failed");
-    } finally {
-      setLoading(false);
+      await flush();
+      onToggleEdit?.(false);
+    } catch {
+      // Error already shown in footer; stay in edit mode.
     }
-  }, [buildSavePayload, draft, onSave, selectedReleaseFilePath, releaseDetailReady]);
+  }, [flush, onToggleEdit]);
 
   const { toolbarProps, getLiveEditorProps } = useMarkdownEditor(body, setBody, {
+    onBlur: () => flush(),
     disabled: false,
     growWithContent: true,
     initialHeight: measuredBodyHeight ?? undefined,
@@ -207,22 +248,11 @@ function ReleaseEditorPanel({
         <Tooltip label="View" placement="bottom-end">
           <button
             type="button"
-            onClick={() => onToggleEdit?.(false)}
+            onClick={() => void handleView()}
             className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
             aria-label="View"
           >
             <Eye className="h-4 w-4" />
-          </button>
-        </Tooltip>
-        <Tooltip label="Save" placement="bottom-end">
-          <button
-            type="button"
-            onClick={handleSaveDraft}
-            disabled={loading || !releaseDetailReady}
-            className="rounded p-1.5 text-indigo-600 hover:bg-indigo-50 disabled:opacity-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
-            aria-label="Save"
-          >
-            <Save className="h-4 w-4" />
           </button>
         </Tooltip>
       </div>

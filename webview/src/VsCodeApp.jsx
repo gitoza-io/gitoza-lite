@@ -8,6 +8,7 @@ import ReleasesPage from "./pages/ReleasesPage";
 import WikiPage from "./pages/WikiPage";
 import { getInitPayload, onInit, onThemeChanged, ready } from "./api/vscodeApi";
 import { useWebviewZoom } from "./hooks/useWebviewZoom";
+import { flushAllAutoSavesBeforeSync } from "./utils/autoSaveFlushRegistry";
 
 export default function VsCodeApp() {
   const { scale, zoomIn, zoomOut, resetZoom } = useWebviewZoom();
@@ -52,10 +53,12 @@ export default function VsCodeApp() {
 
   const handleChangeView = useCallback((view) => {
     if (activeView === "testrun" && view !== "testrun" && runResultsDirty) {
-      leaveTestRunRef.current?.(() => setActiveView(view));
+      leaveTestRunRef.current?.(() => {
+        void flushAllAutoSavesBeforeSync().then(() => setActiveView(view));
+      });
       return;
     }
-    setActiveView(view);
+    void flushAllAutoSavesBeforeSync().then(() => setActiveView(view));
   }, [activeView, runResultsDirty]);
 
   const registerLeaveTestRunHandler = useCallback((handler) => {

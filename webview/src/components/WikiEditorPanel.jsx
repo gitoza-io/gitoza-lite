@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Eye, Pencil, Save } from "lucide-react";
+import { BookOpen, Eye, Pencil } from "lucide-react";
 import DetailPanel from "./DetailPanel";
 import DetailPanelEmpty from "./DetailPanelEmpty";
 import LiveMarkdownEditor from "./LiveMarkdownEditor";
@@ -12,7 +12,10 @@ import {
 import StickyThenScroll from "./StickyThenScroll";
 import WikiDetailView from "./WikiDetailView";
 import Tooltip from "./Tooltip";
+import { DEBOUNCE_MS } from "../constants/autoSave";
+import { useDebouncedAutoSave } from "../hooks/useDebouncedAutoSave";
 import { useMarkdownEditor } from "../hooks/useMarkdownEditor";
+import { registerAutoSaveFlush } from "../utils/autoSaveFlushRegistry";
 import TagsInput from "./TagsInput";
 
 const inlineCls =
@@ -24,8 +27,19 @@ const WIKI_STATUS_OPTIONS = [
   { value: "outdated", label: "Outdated" },
 ];
 
+const normalizeWikiDraft = (d) => ({
+  title: (d.title || "").trim(),
+  status: (d.status || "draft").trim().toLowerCase(),
+  tags: (d.tagsStr || "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .join(","),
+  body: (d.body || "").trim(),
+});
+
 /**
- * Wiki detail / edit panel — mirrors TicketEditorPanel (manual save + LiveMarkdownEditor).
+ * Wiki detail / edit panel — debounced auto-save + LiveMarkdownEditor.
  */
 function WikiEditorPanel({
   wikiDetail = null,
@@ -42,7 +56,6 @@ function WikiEditorPanel({
   const [tagsStr, setTagsStr] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [body, setBody] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [measuredBodyHeight, setMeasuredBodyHeight] = useState(null);
   const [formSyncedPath, setFormSyncedPath] = useState(null);
@@ -136,6 +149,16 @@ function WikiEditorPanel({
     [title, status, tagsStr, body],
   );
 
+  const persistedSnapshot = useMemo(
+    () => ({
+      title: wikiDetail?.title ?? "",
+      status: (wikiDetail?.status || "draft").toLowerCase(),
+      tagsStr: Array.isArray(wikiDetail?.tags) ? wikiDetail.tags.join(", ") : "",
+      body: wikiDetail?.body ?? "",
+    }),
+    [wikiDetail],
+  );
+
   const buildSavePayload = useCallback(
     (d) => ({
       title: d.title.trim(),
@@ -149,20 +172,44 @@ function WikiEditorPanel({
     [],
   );
 
-  const handleSaveDraft = useCallback(async () => {
-    if (!wikiDetailReady || !selectedWikiFilePath) return;
-    setError("");
-    setLoading(true);
+  const handleAutoSave = useCallback(
+    async (d) => {
+      if (!selectedWikiFilePath) return;
+      setError("");
+      try {
+        await onSave(selectedWikiFilePath, buildSavePayload(d));
+      } catch (err) {
+        setError(err?.message || "Save failed");
+        throw err;
+      }
+    },
+    [buildSavePayload, onSave, selectedWikiFilePath],
+  );
+
+  const { flush } = useDebouncedAutoSave({
+    enabled: isEditing && wikiDetailReady,
+    key: selectedWikiFilePath,
+    draft,
+    persisted: persistedSnapshot,
+    normalize: normalizeWikiDraft,
+    save: handleAutoSave,
+    delayMs: DEBOUNCE_MS,
+    silent: true,
+  });
+
+  useEffect(() => registerAutoSaveFlush(flush), [flush]);
+
+  const handleView = useCallback(async () => {
     try {
-      await onSave(buildSavePayload(draft));
-    } catch (err) {
-      setError(err?.message || "Save failed");
-    } finally {
-      setLoading(false);
+      await flush();
+      onToggleEdit?.(false);
+    } catch {
+      // Error already shown in footer; stay in edit mode.
     }
-  }, [buildSavePayload, draft, onSave, selectedWikiFilePath, wikiDetailReady]);
+  }, [flush, onToggleEdit]);
 
   const { toolbarProps, getLiveEditorProps } = useMarkdownEditor(body, setBody, {
+    onBlur: () => flush(),
     disabled: false,
     growWithContent: true,
     initialHeight: measuredBodyHeight ?? undefined,
@@ -241,22 +288,11 @@ function WikiEditorPanel({
         <Tooltip label="View" placement="bottom-end">
           <button
             type="button"
-            onClick={() => onToggleEdit?.(false)}
+            onClick={() => void handleView()}
             className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
             aria-label="View"
           >
             <Eye className="h-4 w-4" />
-          </button>
-        </Tooltip>
-        <Tooltip label="Save" placement="bottom-end">
-          <button
-            type="button"
-            onClick={handleSaveDraft}
-            disabled={loading || !wikiDetailReady}
-            className="rounded p-1.5 text-indigo-600 hover:bg-indigo-50 disabled:opacity-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
-            aria-label="Save"
-          >
-            <Save className="h-4 w-4" />
           </button>
         </Tooltip>
       </div>

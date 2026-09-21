@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eye, Pencil, Save, Ticket } from "lucide-react";
+import { Eye, Pencil, Ticket } from "lucide-react";
 import { CustomFieldsEditStrip } from "./CaseCustomFields";
 import DetailPanel from "./DetailPanel";
 import DetailPanelEmpty from "./DetailPanelEmpty";
@@ -14,8 +14,11 @@ import StickyThenScroll from "./StickyThenScroll";
 import TicketDetailView from "./TicketDetailView";
 import Tooltip from "./Tooltip";
 import { priorityColors } from "./TestCaseDetailModal";
+import { DEBOUNCE_MS } from "../constants/autoSave";
+import { useDebouncedAutoSave } from "../hooks/useDebouncedAutoSave";
 import { useMarkdownEditor } from "../hooks/useMarkdownEditor";
 import { listReleases, onTicketsUpdated } from "../services/api";
+import { registerAutoSaveFlush } from "../utils/autoSaveFlushRegistry";
 import TagsInput from "./TagsInput";
 
 const inlineCls =
@@ -30,8 +33,25 @@ const TICKET_STATUS_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
+const normalizeTicketDraft = (d) => ({
+  title: (d.title || "").trim(),
+  type: (d.type || "task").trim().toLowerCase(),
+  status: (d.status || "open").trim().toLowerCase(),
+  priority: (d.priority || "medium").trim().toLowerCase(),
+  assigned_to: (d.assignedTo || "").trim(),
+  reporter: (d.reporter || "").trim(),
+  release: (d.release || "").trim(),
+  tags: (d.tagsStr || "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .join(","),
+  body: (d.body || "").trim(),
+  params: JSON.stringify(d.params ?? {}),
+});
+
 /**
- * Ticket detail / edit panel — mirrors CaseEditorPanel (manual save + LiveMarkdownEditor).
+ * Ticket detail / edit panel — debounced auto-save + LiveMarkdownEditor.
  */
 function TicketEditorPanel({
   ticketDetail = null,
@@ -55,7 +75,6 @@ function TicketEditorPanel({
   const [tagInput, setTagInput] = useState("");
   const [params, setParams] = useState({});
   const [body, setBody] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [measuredBodyHeight, setMeasuredBodyHeight] = useState(null);
   const [formSyncedPath, setFormSyncedPath] = useState(null);
@@ -222,6 +241,22 @@ function TicketEditorPanel({
     ],
   );
 
+  const persistedSnapshot = useMemo(
+    () => ({
+      title: ticketDetail?.title ?? "",
+      type: (ticketDetail?.type || "task").toLowerCase(),
+      status: (ticketDetail?.status || "open").toLowerCase(),
+      priority: (ticketDetail?.priority || "medium").toLowerCase(),
+      assignedTo: ticketDetail?.assigned_to ?? "",
+      reporter: ticketDetail?.reporter ?? "",
+      release: ticketDetail?.release ?? "",
+      tagsStr: Array.isArray(ticketDetail?.tags) ? ticketDetail.tags.join(", ") : "",
+      params: ticketDetail?.params ?? {},
+      body: ticketDetail?.body ?? "",
+    }),
+    [ticketDetail],
+  );
+
   const buildSavePayload = useCallback(
     (d) => ({
       title: d.title.trim(),
@@ -241,20 +276,44 @@ function TicketEditorPanel({
     [],
   );
 
-  const handleSaveDraft = useCallback(async () => {
-    if (!ticketDetailReady || !selectedTicketFilePath) return;
-    setError("");
-    setLoading(true);
+  const handleAutoSave = useCallback(
+    async (d) => {
+      if (!selectedTicketFilePath) return;
+      setError("");
+      try {
+        await onSave(selectedTicketFilePath, buildSavePayload(d));
+      } catch (err) {
+        setError(err?.message || "Save failed");
+        throw err;
+      }
+    },
+    [buildSavePayload, onSave, selectedTicketFilePath],
+  );
+
+  const { flush } = useDebouncedAutoSave({
+    enabled: isEditing && ticketDetailReady,
+    key: selectedTicketFilePath,
+    draft,
+    persisted: persistedSnapshot,
+    normalize: normalizeTicketDraft,
+    save: handleAutoSave,
+    delayMs: DEBOUNCE_MS,
+    silent: true,
+  });
+
+  useEffect(() => registerAutoSaveFlush(flush), [flush]);
+
+  const handleView = useCallback(async () => {
     try {
-      await onSave(buildSavePayload(draft));
-    } catch (err) {
-      setError(err?.message || "Save failed");
-    } finally {
-      setLoading(false);
+      await flush();
+      onToggleEdit?.(false);
+    } catch {
+      // Error already shown in footer; stay in edit mode.
     }
-  }, [buildSavePayload, draft, onSave, selectedTicketFilePath, ticketDetailReady]);
+  }, [flush, onToggleEdit]);
 
   const { toolbarProps, getLiveEditorProps } = useMarkdownEditor(body, setBody, {
+    onBlur: () => flush(),
     disabled: false,
     growWithContent: true,
     initialHeight: measuredBodyHeight ?? undefined,
@@ -333,22 +392,11 @@ function TicketEditorPanel({
         <Tooltip label="View" placement="bottom-end">
           <button
             type="button"
-            onClick={() => onToggleEdit?.(false)}
+            onClick={() => void handleView()}
             className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
             aria-label="View"
           >
             <Eye className="h-4 w-4" />
-          </button>
-        </Tooltip>
-        <Tooltip label="Save" placement="bottom-end">
-          <button
-            type="button"
-            onClick={handleSaveDraft}
-            disabled={loading || !ticketDetailReady}
-            className="rounded p-1.5 text-indigo-600 hover:bg-indigo-50 disabled:opacity-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
-            aria-label="Save"
-          >
-            <Save className="h-4 w-4" />
           </button>
         </Tooltip>
       </div>

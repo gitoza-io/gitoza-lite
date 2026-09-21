@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, FilePlus2, Pencil, Eye, Save, Table2, X } from "lucide-react";
+import { ChevronDown, FilePlus2, Pencil, Eye, Table2, X } from "lucide-react";
 import CaseBreadcrumb from "./CaseBreadcrumb";
 import CaseDetailView from "./CaseDetailView";
 import { CustomFieldsEditStrip } from "./CaseCustomFields";
@@ -9,12 +9,15 @@ import Tooltip from "./Tooltip";
 import DetailPanelEmpty from "./DetailPanelEmpty";
 import MarkdownToolbar from "./MarkdownToolbar";
 import StickyThenScroll from "./StickyThenScroll";
+import { DEBOUNCE_MS } from "../constants/autoSave";
+import { useDebouncedAutoSave } from "../hooks/useDebouncedAutoSave";
 import { useMarkdownEditor } from "../hooks/useMarkdownEditor";
 import LiveMarkdownEditor from "./LiveMarkdownEditor";
 import { priorityColors } from "./TestCaseDetailModal";
 import AssigneeInput from "./AssigneeInput";
 import TagsInput from "./TagsInput";
 import { isCaseArchived } from "../utils/caseArchived";
+import { registerAutoSaveFlush } from "../utils/autoSaveFlushRegistry";
 import { DEFAULT_CASE_BODY } from "../constants/defaultCaseBodyTemplates";
 import { SUPPORT_URLS } from "../constants/supportLinks";
 import { openExternalUrl } from "../utils/openExternalUrl";
@@ -55,7 +58,7 @@ const normalizeCaseDraft = (d) => ({
 
 /**
  * Fixed right panel: empty state, read-only detail, or inline edit/create.
- * VS Code extension: manual save via Save button (no auto-save).
+ * Edit mode uses debounced auto-save (2s); create still requires explicit Create.
  */
 function CaseEditorPanel({
   caseDetail,
@@ -311,24 +314,48 @@ function CaseEditorPanel({
     [caseDetail, selectedCaseFilePath, caseId, status],
   );
 
-  const handleSaveDraft = useCallback(async () => {
-    if (!caseDetailReady || !selectedCaseFilePath) return;
-    setError("");
-    setLoading(true);
-    try {
-      await onSave(buildSavePayload(draft));
-    } catch (err) {
-      setError(err?.response?.data?.detail || err?.message || "Save failed");
-    } finally {
-      setLoading(false);
-    }
-  }, [buildSavePayload, caseDetailReady, draft, onSave, selectedCaseFilePath]);
+  const handleAutoSave = useCallback(
+    async (d) => {
+      const filePath = caseDetail?.file_path ?? selectedCaseFilePath;
+      if (!filePath) return;
+      setError("");
+      try {
+        await onSave({
+          ...buildSavePayload(d),
+          file_path: filePath,
+        });
+      } catch (err) {
+        setError(err?.response?.data?.detail || err?.message || "Save failed");
+        throw err;
+      }
+    },
+    [buildSavePayload, caseDetail?.file_path, onSave, selectedCaseFilePath],
+  );
 
-  const noopFlush = useCallback(async () => {}, []);
-  const flush = manualSave ? noopFlush : noopFlush;
+  const { flush } = useDebouncedAutoSave({
+    enabled: isEditing && caseDetailReady && !editorLocked && !showCreateForm,
+    key: selectedCaseFilePath,
+    draft,
+    persisted: persistedSnapshot,
+    normalize: normalizeCaseDraft,
+    save: handleAutoSave,
+    delayMs: DEBOUNCE_MS,
+    silent: true,
+  });
+
+  useEffect(() => registerAutoSaveFlush(flush), [flush]);
+
+  const handleView = useCallback(async () => {
+    try {
+      await flush();
+      onToggleEdit?.(false);
+    } catch {
+      // Error already shown in footer; stay in edit mode.
+    }
+  }, [flush, onToggleEdit]);
 
   const { toolbarProps, liveEditorRef, getLiveEditorProps } = useMarkdownEditor(body, setBody, {
-    onBlur: manualSave ? undefined : flush,
+    onBlur: () => flush(),
     disabled: editorLocked,
     growWithContent: true,
     initialHeight: measuredBodyHeight ?? undefined,
@@ -577,40 +604,13 @@ function CaseEditorPanel({
         <Tooltip label="View" placement="bottom-end">
           <button
             type="button"
-            onClick={() => {
-              const discardDraft = {
-                title,
-                priority,
-                status,
-                requirement_id: requirementId,
-                assigned_to: assignedTo,
-                automated,
-                tagsStr,
-                body,
-                params,
-                tags: (tagsStr || "").split(",").map((t) => t.trim()).filter(Boolean),
-              };
-              onToggleEdit?.(false, discardDraft);
-            }}
+            onClick={() => void handleView()}
             className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
             aria-label="View"
           >
             <Eye className="h-4 w-4" />
           </button>
         </Tooltip>
-        {manualSave ? (
-          <Tooltip label="Save" placement="bottom-end">
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              disabled={loading || editorLocked}
-              className="rounded p-1.5 text-indigo-600 hover:bg-indigo-50 disabled:opacity-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
-              aria-label="Save"
-            >
-              <Save className="h-4 w-4" />
-            </button>
-          </Tooltip>
-        ) : null}
       </div>
       <div className="mt-2 flex flex-wrap items-stretch gap-2">
           <MetadataFieldEdit label="Priority">

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Box,
@@ -50,6 +50,7 @@ import {
   updateRelease,
   updateTicket,
 } from "../services/api";
+import { flushAllAutoSavesBeforeSync } from "../utils/autoSaveFlushRegistry";
 import { filterGroupedMap } from "../utils/entityTreeSearch";
 import {
   sortProjectsWithPins,
@@ -177,6 +178,10 @@ export default function ReleasesPage({
   const [ticketDetail, setTicketDetail] = useState(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState(null);
+  const selectedReleasePathRef = useRef(null);
+  const selectedTicketPathRef = useRef(null);
+  selectedReleasePathRef.current = selectedReleasePath;
+  selectedTicketPathRef.current = selectedTicketPath;
   const [contextMenu, setContextMenu] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchChips, setSearchChips] = useState([]);
@@ -214,31 +219,44 @@ export default function ReleasesPage({
   useEffect(() => {
     return onTicketsUpdated(() => {
       void reload();
-      if (selectedReleasePath) {
-        void getReleaseDetail(selectedReleasePath)
-          .then(setReleaseDetail)
+      const releasePath = selectedReleasePathRef.current;
+      if (releasePath) {
+        void getReleaseDetail(releasePath)
+          .then((d) => {
+            if (selectedReleasePathRef.current === releasePath) {
+              setReleaseDetail(d);
+            }
+          })
           .catch(() => {});
       }
-      if (selectedTicketPath) {
-        void getTicketDetail(selectedTicketPath)
-          .then(setTicketDetail)
+      const ticketPath = selectedTicketPathRef.current;
+      if (ticketPath) {
+        void getTicketDetail(ticketPath)
+          .then((d) => {
+            if (selectedTicketPathRef.current === ticketPath) {
+              setTicketDetail(d);
+            }
+          })
           .catch(() => {});
       }
     });
-  }, [reload, selectedReleasePath, selectedTicketPath]);
+  }, [reload]);
 
   useEffect(() => {
     if (!selectedReleasePath) {
       setReleaseDetail(null);
       return;
     }
+    const path = selectedReleasePath;
     let cancelled = false;
-    void getReleaseDetail(selectedReleasePath)
+    void getReleaseDetail(path)
       .then((d) => {
-        if (!cancelled) setReleaseDetail(d);
+        if (!cancelled && selectedReleasePathRef.current === path) {
+          setReleaseDetail(d);
+        }
       })
       .catch((e) => {
-        if (!cancelled) {
+        if (!cancelled && selectedReleasePathRef.current === path) {
           setError(e instanceof Error ? e.message : "Failed to load release");
         }
       });
@@ -252,13 +270,16 @@ export default function ReleasesPage({
       setTicketDetail(null);
       return;
     }
+    const path = selectedTicketPath;
     let cancelled = false;
-    void getTicketDetail(selectedTicketPath)
+    void getTicketDetail(path)
       .then((d) => {
-        if (!cancelled) setTicketDetail(d);
+        if (!cancelled && selectedTicketPathRef.current === path) {
+          setTicketDetail(d);
+        }
       })
       .catch((e) => {
-        if (!cancelled) {
+        if (!cancelled && selectedTicketPathRef.current === path) {
           setError(e instanceof Error ? e.message : "Failed to load ticket");
         }
       });
@@ -412,6 +433,7 @@ export default function ReleasesPage({
   };
 
   const clearDetailSelection = () => {
+    void flushAllAutoSavesBeforeSync();
     setSelectedReleasePath(null);
     setSelectedTicketPath(null);
     setReleaseDetail(null);
@@ -475,21 +497,29 @@ export default function ReleasesPage({
     [creatingReleaseInProject, reload, onTicketsRootInitialized],
   );
 
-  const handleSaveRelease = async (payload) => {
-    if (!selectedReleasePath) return;
-    await updateRelease(selectedReleasePath, payload);
-    setEditing(false);
-    setReleaseDetail(await getReleaseDetail(selectedReleasePath));
-    await reload();
-  };
+  const handleSaveRelease = useCallback(
+    async (filePath, payload) => {
+      if (!filePath) return;
+      await updateRelease(filePath, payload);
+      if (selectedReleasePathRef.current === filePath) {
+        setReleaseDetail(await getReleaseDetail(filePath));
+      }
+      await reload();
+    },
+    [reload],
+  );
 
-  const handleSaveTicket = async (payload) => {
-    if (!selectedTicketPath) return;
-    await updateTicket(selectedTicketPath, payload);
-    setEditing(false);
-    setTicketDetail(await getTicketDetail(selectedTicketPath));
-    await reload();
-  };
+  const handleSaveTicket = useCallback(
+    async (filePath, payload) => {
+      if (!filePath) return;
+      await updateTicket(filePath, payload);
+      if (selectedTicketPathRef.current === filePath) {
+        setTicketDetail(await getTicketDetail(filePath));
+      }
+      await reload();
+    },
+    [reload],
+  );
 
   const toggleProject = (name) => {
     setExpanded((prev) => {
@@ -518,18 +548,26 @@ export default function ReleasesPage({
   const selectRelease = (projectName, release) => {
     setSelectedProject(projectName);
     setCreatingReleaseInProject(null);
+    const switchingFromTicket = Boolean(selectedTicketPath);
+    if (switchingFromTicket) {
+      void flushAllAutoSavesBeforeSync();
+      setEditing(false);
+    }
     setSelectedTicketPath(null);
     setTicketDetail(null);
-    setEditing(false);
     setSelectedReleasePath(release.file_path);
   };
 
   const selectTicket = (projectName, release, ticket) => {
     setSelectedProject(projectName);
     setCreatingReleaseInProject(null);
+    const switchingFromRelease = Boolean(selectedReleasePath);
+    if (switchingFromRelease) {
+      void flushAllAutoSavesBeforeSync();
+      setEditing(false);
+    }
     setSelectedReleasePath(null);
     setReleaseDetail(null);
-    setEditing(false);
     setSelectedTicketPath(ticket.file_path);
   };
 

@@ -29,6 +29,7 @@ import {
   getRenameConflictDisplayName,
   RenameNameConflictError,
 } from "../utils/renameConflict";
+import { flushAllAutoSavesBeforeSync } from "../utils/autoSaveFlushRegistry";
 
 const ACTIVE_REPO = "vscode";
 
@@ -47,6 +48,8 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
   const [filterOptions, setFilterOptions] = useState({});
   const [activeSearchChips, setActiveSearchChips] = useState([]);
   const caseListWindowRef = useRef(null);
+  const selectedCaseFilePathRef = useRef(null);
+  selectedCaseFilePathRef.current = selectedCaseFilePath;
 
   useEffect(() => {
     getCaseFilters(ACTIVE_REPO)
@@ -58,30 +61,40 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
     return onCasesUpdated(() => {
       void loadData();
       caseListWindowRef.current?.invalidateAll?.();
-      if (selectedCaseFilePath) {
-        getCaseDetail(selectedCaseFilePath, ACTIVE_REPO)
-          .then(setCaseDetail)
+      const path = selectedCaseFilePathRef.current;
+      if (path) {
+        getCaseDetail(path, ACTIVE_REPO)
+          .then((detail) => {
+            if (selectedCaseFilePathRef.current === path) setCaseDetail(detail);
+          })
           .catch(() => {});
       }
     });
-  }, [loadData, selectedCaseFilePath]);
+  }, [loadData]);
 
   useEffect(() => {
     if (!selectedCaseFilePath) {
       setCaseDetail(null);
       return;
     }
+    const path = selectedCaseFilePath;
     let cancelled = false;
     setCaseDetailLoading(true);
-    getCaseDetail(selectedCaseFilePath, ACTIVE_REPO)
+    getCaseDetail(path, ACTIVE_REPO)
       .then((detail) => {
-        if (!cancelled) setCaseDetail(detail);
+        if (!cancelled && selectedCaseFilePathRef.current === path) {
+          setCaseDetail(detail);
+        }
       })
       .catch(() => {
-        if (!cancelled) setCaseDetail(null);
+        if (!cancelled && selectedCaseFilePathRef.current === path) {
+          setCaseDetail(null);
+        }
       })
       .finally(() => {
-        if (!cancelled) setCaseDetailLoading(false);
+        if (!cancelled && selectedCaseFilePathRef.current === path) {
+          setCaseDetailLoading(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -104,11 +117,11 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
 
   const handleSelectCase = useCallback((row) => {
     setShowCreateFormInPanel(false);
-    setIsEditingCase(false);
     setSelectedCaseFilePath(row?.file_path ?? null);
   }, []);
 
   const handleSelectBrowseFolder = useCallback((path) => {
+    void flushAllAutoSavesBeforeSync();
     setSelectedFolderPath(path);
     setSelectedCaseFilePath(null);
     setIsEditingCase(false);
@@ -121,6 +134,7 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
 
   const handleSaveCase = useCallback(async (payload) => {
     const filePath = payload.file_path;
+    if (!filePath) return;
     await updateCase(
       filePath,
       {
@@ -135,9 +149,10 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
       },
       ACTIVE_REPO,
     );
-    const detail = await getCaseDetail(filePath, ACTIVE_REPO);
-    setCaseDetail(detail);
-    setIsEditingCase(false);
+    if (selectedCaseFilePathRef.current === filePath) {
+      const detail = await getCaseDetail(filePath, ACTIVE_REPO);
+      setCaseDetail(detail);
+    }
   }, []);
 
   const handleCreateCase = useCallback(
@@ -451,19 +466,31 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
         isEditingCase={isEditingCase}
         onSelectCase={handleSelectCase}
         onClearSelection={() => {
-          setSelectedCaseFilePath(null);
-          setIsEditingCase(false);
+          void flushAllAutoSavesBeforeSync().then(() => {
+            setSelectedCaseFilePath(null);
+            setIsEditingCase(false);
+          });
         }}
         onToggleEdit={handleToggleEdit}
         onSaveCase={handleSaveCase}
         showCreateFormInPanel={showCreateFormInPanel}
-        onStartCreate={() => setShowCreateFormInPanel(true)}
+        onStartCreate={() => {
+          void flushAllAutoSavesBeforeSync().then(() => {
+            setIsEditingCase(false);
+            setShowCreateFormInPanel(true);
+          });
+        }}
         onCancelCreate={() => setShowCreateFormInPanel(false)}
         onCreateCase={handleCreateCase}
         onCommitInlineCase={handleCommitInlineCase}
         effectiveProjectDir={effectiveProjectDir}
         contextTargetFolder={selectedFolderPath}
-        onContextCreateTestCase={() => setShowCreateFormInPanel(true)}
+        onContextCreateTestCase={() => {
+          void flushAllAutoSavesBeforeSync().then(() => {
+            setIsEditingCase(false);
+            setShowCreateFormInPanel(true);
+          });
+        }}
         onCreateFolder={handleCreateFolder}
         onRenameFolder={handleRenameFolder}
         onOpenCreateProject={() => setCreatingProject(true)}
