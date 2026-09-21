@@ -39,6 +39,7 @@ import { TOOLBAR_BTN_SELECTED } from "../constants/toolbarStyles";
 import { usePinnedProjects } from "../hooks/usePinnedProjects";
 import {
   createRelease,
+  createTicket,
   createTicketProject,
   getReleaseDetail,
   getTicketDetail,
@@ -497,6 +498,36 @@ export default function ReleasesPage({
     [creatingReleaseInProject, reload, onTicketsRootInitialized],
   );
 
+  const handleCreateTicketFromRelease = useCallback(
+    async (projectName, releaseId) => {
+      if (!projectName || !releaseId) return;
+      try {
+        await ensureRoot();
+        const created = await createTicket({
+          project: projectName,
+          release: releaseId,
+          title: "Untitled",
+          type: "task",
+          status: "open",
+          priority: "medium",
+        });
+        setCreatingReleaseInProject(null);
+        setSelectedProject(projectName);
+        setSelectedReleasePath(null);
+        setReleaseDetail(null);
+        setExpanded((prev) => new Set(prev).add(projectName));
+        setExpandedReleases((prev) => new Set(prev).add(releaseId));
+        await reload();
+        setSelectedTicketPath(created.file_path);
+        setEditing(true);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to create ticket");
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ensureRoot uses stable props
+    [reload, onTicketsRootInitialized],
+  );
+
   const handleSaveRelease = useCallback(
     async (filePath, payload) => {
       if (!filePath) return;
@@ -772,6 +803,7 @@ export default function ReleasesPage({
                           e.stopPropagation();
                           setSelectedProject(p.name);
                           setContextMenu({
+                            kind: "project",
                             x: e.clientX,
                             y: e.clientY,
                             projectName: p.name,
@@ -926,6 +958,18 @@ export default function ReleasesPage({
                                     e.preventDefault();
                                     selectRelease(p.name, r);
                                   }
+                                }}
+                                onContextMenu={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  selectRelease(p.name, r);
+                                  setContextMenu({
+                                    kind: "release",
+                                    x: e.clientX,
+                                    y: e.clientY,
+                                    projectName: p.name,
+                                    releaseId: r.release_id,
+                                  });
                                 }}
                               >
                                 <TreeRowGuides level={releaseLevel} />
@@ -1122,21 +1166,37 @@ export default function ReleasesPage({
         x={contextMenu?.x ?? 0}
         y={contextMenu?.y ?? 0}
         onClose={() => setContextMenu(null)}
-        items={[
-          {
-            icon: FilePlus2,
-            label: "Create release",
-            onClick: () => {
-              const projectName = contextMenu?.projectName;
-              if (!projectName) return;
-              setCreatingProject(false);
-              setCreatingReleaseInProject(projectName);
-              setExpanded((prev) => new Set(prev).add(projectName));
-              setSelectedProject(projectName);
-              clearDetailSelection();
-            },
-          },
-        ]}
+        items={
+          contextMenu?.kind === "release"
+            ? [
+                {
+                  icon: FilePlus2,
+                  label: "Create ticket",
+                  onClick: () => {
+                    const projectName = contextMenu?.projectName;
+                    const releaseId = contextMenu?.releaseId;
+                    if (projectName && releaseId) {
+                      void handleCreateTicketFromRelease(projectName, releaseId);
+                    }
+                  },
+                },
+              ]
+            : [
+                {
+                  icon: FilePlus2,
+                  label: "Create release",
+                  onClick: () => {
+                    const projectName = contextMenu?.projectName;
+                    if (!projectName) return;
+                    setCreatingProject(false);
+                    setCreatingReleaseInProject(projectName);
+                    setExpanded((prev) => new Set(prev).add(projectName));
+                    setSelectedProject(projectName);
+                    clearDetailSelection();
+                  },
+                },
+              ]
+        }
       />
     </div>
   );

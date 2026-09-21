@@ -1,0 +1,18 @@
+---
+title: Add cases to a run from right-click with preview in column 1
+type: story
+status: open
+priority: medium
+release: Gitoza-lite/0-3-1
+---
+
+## Summary
+
+From a run’s right-click menu, open a flow to add test cases: pick cases in column 1 and preview each case’s content before confirming.
+
+## Details
+
+- Right-click a run → menu action to add / select cases.
+- Column 1 shows the case picker (tree or list) for selection.
+- Selecting a case shows a preview of that case’s content (title, frontmatter, body) so the user can confirm before adding.
+- Confirming adds the selected cases to the run.
