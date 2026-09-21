@@ -33,6 +33,11 @@ export const CASE_SEARCH_KEYS = [
     multi: false,
     apiParam: "priority",
     filterKey: "priorities",
+    options: [
+      { value: "high", label: "High" },
+      { value: "medium", label: "Medium" },
+      { value: "low", label: "Low" },
+    ],
   },
   {
     key: "approve_status",
@@ -109,6 +114,11 @@ export const RUN_SEARCH_KEYS = [
     multi: false,
     apiParam: "priority",
     filterKey: "priorities",
+    options: [
+      { value: "high", label: "High" },
+      { value: "medium", label: "Medium" },
+      { value: "low", label: "Low" },
+    ],
   },
   {
     key: "requirement_id",
