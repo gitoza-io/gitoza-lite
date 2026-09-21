@@ -369,7 +369,7 @@ function TicketEditorPanel({
   const ticketId = ticketDetail?.ticket_id || "—";
 
   const ticketHeader = (
-    <header className="border-b border-slate-200 bg-slate-50/60 px-3 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+    <header className="relative z-20 border-b border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-900">
       <div className="flex flex-wrap items-center gap-2">
         <input
           type="text"
@@ -400,88 +400,91 @@ function TicketEditorPanel({
           </button>
         </Tooltip>
       </div>
-      <div className="mt-2 flex flex-wrap items-stretch gap-2">
-        <MetadataFieldEdit label="Type">
-          <select
-            value={ticketType}
-            onChange={(e) => setTicketType(e.target.value)}
-            className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
-          >
-            <option value="bug">Bug</option>
-            <option value="story">Story</option>
-            <option value="task">Task</option>
-            <option value="spike">Spike</option>
-          </select>
-        </MetadataFieldEdit>
-        <MetadataFieldEdit label="Status">
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
-          >
-            {TICKET_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </MetadataFieldEdit>
-        <MetadataFieldEdit label="Priority">
-          <select
-            value={priority}
-            onChange={(e) => setPriority(e.target.value)}
-            className={`${METADATA_EDIT_INPUT_CLS} ${priorityColors[priorityKey] || METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
-          >
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </MetadataFieldEdit>
-        <MetadataFieldEdit label="Assigned to">
-          <input
-            type="text"
-            value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
-            placeholder="—"
-            className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS}`}
-          />
-        </MetadataFieldEdit>
-        <MetadataFieldEdit label="Reporter">
-          <input
-            type="text"
-            value={reporter}
-            onChange={(e) => setReporter(e.target.value)}
-            placeholder="—"
-            className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS}`}
-          />
-        </MetadataFieldEdit>
-        <MetadataFieldEdit label="Release">
-          <select
-            value={release}
-            onChange={(e) => setRelease(e.target.value)}
-            className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
-            aria-label="Release"
-          >
-            <option value="">—</option>
-            {releaseSelectOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </MetadataFieldEdit>
-        <MetadataFieldEdit label="Tags" className="min-w-[12rem]">
-          <TagsInput
-            tags={displayTags}
-            inputValue={tagInput}
-            onInputChange={setTagInput}
-            onAddTag={handleAddTag}
-            onRemoveTag={handleRemoveTag}
-          />
-        </MetadataFieldEdit>
-        <CustomFieldsEditStrip value={params} onChange={setParams} />
-      </div>
     </header>
+  );
+
+  const ticketMetadataStrip = (
+    <div className="flex flex-wrap items-stretch gap-2">
+      <MetadataFieldEdit label="Type">
+        <select
+          value={ticketType}
+          onChange={(e) => setTicketType(e.target.value)}
+          className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
+        >
+          <option value="bug">Bug</option>
+          <option value="story">Story</option>
+          <option value="task">Task</option>
+          <option value="spike">Spike</option>
+        </select>
+      </MetadataFieldEdit>
+      <MetadataFieldEdit label="Status">
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
+        >
+          {TICKET_STATUS_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </MetadataFieldEdit>
+      <MetadataFieldEdit label="Priority">
+        <select
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+          className={`${METADATA_EDIT_INPUT_CLS} ${priorityColors[priorityKey] || METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
+        >
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </MetadataFieldEdit>
+      <MetadataFieldEdit label="Assigned to">
+        <input
+          type="text"
+          value={assignedTo}
+          onChange={(e) => setAssignedTo(e.target.value)}
+          placeholder="—"
+          className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS}`}
+        />
+      </MetadataFieldEdit>
+      <MetadataFieldEdit label="Reporter">
+        <input
+          type="text"
+          value={reporter}
+          onChange={(e) => setReporter(e.target.value)}
+          placeholder="—"
+          className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS}`}
+        />
+      </MetadataFieldEdit>
+      <MetadataFieldEdit label="Release">
+        <select
+          value={release}
+          onChange={(e) => setRelease(e.target.value)}
+          className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
+          aria-label="Release"
+        >
+          <option value="">—</option>
+          {releaseSelectOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </MetadataFieldEdit>
+      <MetadataFieldEdit label="Tags" className="min-w-[12rem]">
+        <TagsInput
+          tags={displayTags}
+          inputValue={tagInput}
+          onInputChange={setTagInput}
+          onAddTag={handleAddTag}
+          onRemoveTag={handleRemoveTag}
+        />
+      </MetadataFieldEdit>
+      <CustomFieldsEditStrip value={params} onChange={setParams} />
+    </div>
   );
 
   const bodyEditorProps = getLiveEditorProps({
@@ -509,20 +512,19 @@ function TicketEditorPanel({
     >
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <StickyThenScroll
-          stickyContent={
+          stickyContent={ticketHeader}
+          scrollContent={
             <>
-              {ticketHeader}
-              <div className="px-3 pt-1">
+              <div className="px-3 pb-2 pt-3">{ticketMetadataStrip}</div>
+              <div className="sticky top-0 z-20 border-t border-slate-200 bg-white px-3 pt-2 shadow-[0_-2px_0_0_#fff] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_-2px_0_0_#0f172a]">
                 <MarkdownToolbar {...toolbarProps} />
               </div>
-            </>
-          }
-          scrollContent={
-            <div className="px-3 py-3">
-              <div className="relative">
-                <LiveMarkdownEditor {...bodyEditorProps} />
+              <div className="px-3 pb-3 pt-2">
+                <div className="relative">
+                  <LiveMarkdownEditor {...bodyEditorProps} />
+                </div>
               </div>
-            </div>
+            </>
           }
         />
         {error ? (

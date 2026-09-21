@@ -573,7 +573,7 @@ function CaseEditorPanel({
   });
 
   const caseHeader = (
-    <header className="border-b border-slate-200 px-3 py-3 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/60">
+    <header className="relative z-20 border-b border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-900">
       <div className="flex flex-wrap items-center gap-2">
         <input
           type="text"
@@ -612,66 +612,69 @@ function CaseEditorPanel({
           </button>
         </Tooltip>
       </div>
-      <div className="mt-2 flex flex-wrap items-stretch gap-2">
-          <MetadataFieldEdit label="Priority">
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className={`${METADATA_EDIT_INPUT_CLS} ${priorityColors[priorityKey] || METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
-            >
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </MetadataFieldEdit>
-          <MetadataFieldEdit label="Requirement">
-            <input
-              type="text"
-              value={requirementId}
-              onChange={(e) => setRequirementId(e.target.value)}
-              placeholder="—"
-              className={`${METADATA_EDIT_INPUT_CLS} text-indigo-800 placeholder:text-slate-400 dark:text-indigo-200 dark:placeholder:text-slate-500`}
-            />
-          </MetadataFieldEdit>
-          <MetadataFieldEdit label="Automated">
-            <label className="flex min-h-[1.75rem] cursor-pointer items-center gap-2 px-0.5">
-              <input
-                type="checkbox"
-                checked={automated}
-                onChange={(e) => setAutomated(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                aria-label="Automated test case"
-              />
-            </label>
-          </MetadataFieldEdit>
-          <MetadataFieldEdit label="Assigned to">
-            <AssigneeInput
-              value={assignedTo}
-              onChange={setAssignedTo}
-              suggestions={allUsernames ?? []}
-              placeholder="—"
-            />
-          </MetadataFieldEdit>
-          <MetadataFieldEdit label="Tags" className="min-w-[12rem]">
-            <TagsInput
-              tags={displayTags}
-              inputValue={tagInput}
-              onInputChange={setTagInput}
-              onAddTag={handleAddTag}
-              onRemoveTag={handleRemoveTag}
-              suggestions={suggestedTags}
-              disabled={editorLocked}
-            />
-          </MetadataFieldEdit>
-          <CustomFieldsEditStrip
-            value={params}
-            onChange={setParams}
-            paramKeys={paramKeys ?? []}
-            paramValuesByKey={paramValuesByKey ?? {}}
-            disabled={editorLocked}
-          />
-      </div>
     </header>
+  );
+
+  const caseMetadataStrip = (
+    <div className="flex flex-wrap items-stretch gap-2">
+      <MetadataFieldEdit label="Priority">
+        <select
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+          className={`${METADATA_EDIT_INPUT_CLS} ${priorityColors[priorityKey] || METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
+        >
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </MetadataFieldEdit>
+      <MetadataFieldEdit label="Requirement">
+        <input
+          type="text"
+          value={requirementId}
+          onChange={(e) => setRequirementId(e.target.value)}
+          placeholder="—"
+          className={`${METADATA_EDIT_INPUT_CLS} text-indigo-800 placeholder:text-slate-400 dark:text-indigo-200 dark:placeholder:text-slate-500`}
+        />
+      </MetadataFieldEdit>
+      <MetadataFieldEdit label="Automated">
+        <label className="flex min-h-[1.75rem] cursor-pointer items-center gap-2 px-0.5">
+          <input
+            type="checkbox"
+            checked={automated}
+            onChange={(e) => setAutomated(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            aria-label="Automated test case"
+          />
+        </label>
+      </MetadataFieldEdit>
+      <MetadataFieldEdit label="Assigned to">
+        <AssigneeInput
+          value={assignedTo}
+          onChange={setAssignedTo}
+          suggestions={allUsernames ?? []}
+          placeholder="—"
+        />
+      </MetadataFieldEdit>
+      <MetadataFieldEdit label="Tags" className="min-w-[12rem]">
+        <TagsInput
+          tags={displayTags}
+          inputValue={tagInput}
+          onInputChange={setTagInput}
+          onAddTag={handleAddTag}
+          onRemoveTag={handleRemoveTag}
+          suggestions={suggestedTags}
+          disabled={editorLocked}
+        />
+      </MetadataFieldEdit>
+      <CustomFieldsEditStrip
+        value={params}
+        onChange={setParams}
+        paramKeys={paramKeys ?? []}
+        paramValuesByKey={paramValuesByKey ?? {}}
+        disabled={editorLocked}
+      />
+    </div>
   );
 
   const bodyEditorProps = getLiveEditorProps({
@@ -686,10 +689,11 @@ function CaseEditorPanel({
     <DetailPanel title={<CaseBreadcrumb filePath={caseDetail?.file_path ?? selectedCaseFilePath} />} bodyScroll={false}>
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <StickyThenScroll
-          stickyContent={
+          stickyContent={caseHeader}
+          scrollContent={
             <>
-              {caseHeader}
-              <div className="px-3 pt-1">
+              <div className="px-3 pb-2 pt-3">{caseMetadataStrip}</div>
+              <div className="sticky top-0 z-20 border-t border-slate-200 bg-white px-3 pt-2 shadow-[0_-2px_0_0_#fff] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_-2px_0_0_#0f172a]">
                 <MarkdownToolbar
                   {...toolbarProps}
                   onInsertImage={handleInsertImageClick}
@@ -726,14 +730,12 @@ function CaseEditorPanel({
                   }
                 />
               </div>
-            </>
-          }
-          scrollContent={
-            <div className="px-3 py-3">
-              <div className="relative">
-                <LiveMarkdownEditor {...bodyEditorProps} />
+              <div className="px-3 pb-3 pt-2">
+                <div className="relative">
+                  <LiveMarkdownEditor {...bodyEditorProps} />
+                </div>
               </div>
-            </div>
+            </>
           }
         />
         {error ? (

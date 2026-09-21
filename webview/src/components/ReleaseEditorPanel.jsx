@@ -225,7 +225,7 @@ function ReleaseEditorPanel({
   const releaseId = releaseDetail?.release_id || "—";
 
   const releaseHeader = (
-    <header className="border-b border-slate-200 bg-slate-50/60 px-3 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+    <header className="relative z-20 border-b border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-900">
       <div className="flex flex-wrap items-center gap-2">
         <input
           type="text"
@@ -256,25 +256,28 @@ function ReleaseEditorPanel({
           </button>
         </Tooltip>
       </div>
-      <div className="mt-2 flex flex-wrap items-stretch gap-2">
-        <MetadataFieldEdit label="Status">
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
-          >
-            {RELEASE_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </MetadataFieldEdit>
-        {releaseDetail?.project ? (
-          <MetadataFieldRead label="Project" value={releaseDetail.project} />
-        ) : null}
-      </div>
     </header>
+  );
+
+  const releaseMetadataStrip = (
+    <div className="flex flex-wrap items-stretch gap-2">
+      <MetadataFieldEdit label="Status">
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className={`${METADATA_EDIT_INPUT_CLS} ${METADATA_EDIT_INPUT_DEFAULT_CLS} cursor-pointer appearance-none pr-7 shadow-sm`}
+        >
+          {RELEASE_STATUS_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </MetadataFieldEdit>
+      {releaseDetail?.project ? (
+        <MetadataFieldRead label="Project" value={releaseDetail.project} />
+      ) : null}
+    </div>
   );
 
   const bodyEditorProps = getLiveEditorProps({
@@ -297,20 +300,19 @@ function ReleaseEditorPanel({
     >
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <StickyThenScroll
-          stickyContent={
+          stickyContent={releaseHeader}
+          scrollContent={
             <>
-              {releaseHeader}
-              <div className="px-3 pt-1">
+              <div className="px-3 pb-2 pt-3">{releaseMetadataStrip}</div>
+              <div className="sticky top-0 z-20 border-t border-slate-200 bg-white px-3 pt-2 shadow-[0_-2px_0_0_#fff] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_-2px_0_0_#0f172a]">
                 <MarkdownToolbar {...toolbarProps} />
               </div>
-            </>
-          }
-          scrollContent={
-            <div className="px-3 py-3">
-              <div className="relative">
-                <LiveMarkdownEditor {...bodyEditorProps} />
+              <div className="px-3 pb-3 pt-2">
+                <div className="relative">
+                  <LiveMarkdownEditor {...bodyEditorProps} />
+                </div>
               </div>
-            </div>
+            </>
           }
         />
         {error ? (
