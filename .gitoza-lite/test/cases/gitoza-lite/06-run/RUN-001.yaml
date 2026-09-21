@@ -1,0 +1,50 @@
+---
+title: Create a run and record results
+status: active
+priority: medium
+tags: [smoke, run]
+---
+
+## Description
+
+Verify Test Run can create or open a run, add a case path, and record Pass / Fail / Skip results.
+
+## Page object
+
+- **Nav.TestRun** — sidebar Test Run icon
+- **Run.Tree** — run list / folder tree
+- **Run.Detail** — run editor (title, case list, results)
+- **Run.TitleField** — run title input
+- **Run.CaseList** — cases listed in the run
+- **Run.AddCase** — control to add a case by path
+- **Run.ResultPass** — Pass result action for a case
+- **Run.ResultFail** — Fail result action for a case
+- **Run.ResultSkip** — Skip result action for a case
+- **Run.SaveControl** — save action (button or auto-save indicator)
+
+## Steps
+
+1. Click **Nav.TestRun**.
+2. Create a new run or open an existing one in **Run.Tree**.
+3. In **Run.Detail**, set **Run.TitleField** to a clear smoke-run name.
+4. Use **Run.AddCase** to add path `.gitoza-lite/test/cases/gitoza-lite/01-install-update/INST-UP-001.yaml`.
+5. Confirm the case appears in **Run.CaseList**.
+6. Set a result using **Run.ResultPass**, **Run.ResultFail**, or **Run.ResultSkip**.
+7. Persist via **Run.SaveControl** (or wait for auto-save if enabled).
+8. Leave and reopen the same run.
+
+## Expected results
+
+- Run opens and accepts case paths without error.
+- Selected Pass / Fail / Skip result is retained after reopen.
+- Run file exists under `.gitoza-lite/test/run/`.
+
+## Actual results
+
+_(Record outcomes during execution.)_
+
+## Environment
+
+- VS Code / Cursor version:
+- Extension version / build:
+- OS:

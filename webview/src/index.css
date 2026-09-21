@@ -1,0 +1,792 @@
+@import "highlight.js/styles/github.min.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Gitoza ↔ VS Code token aliases.
+ * Webview host injects --vscode-*; we never redefine those.
+ * Neutrals invert under html.dark so existing dark: slate pairs keep working.
+ */
+:root {
+  /* Neutrals — light: low = surface, high = text */
+  --gitoza-slate-50: var(--vscode-editor-background);
+  --gitoza-slate-100: var(--vscode-sideBar-background);
+  --gitoza-slate-200: var(--vscode-list-hoverBackground);
+  --gitoza-slate-300: var(--vscode-panel-border, var(--vscode-input-border));
+  --gitoza-slate-400: var(--vscode-disabledForeground);
+  --gitoza-slate-500: var(--vscode-descriptionForeground);
+  --gitoza-slate-600: var(--vscode-descriptionForeground);
+  --gitoza-slate-700: var(--vscode-foreground);
+  --gitoza-slate-800: var(--vscode-foreground);
+  --gitoza-slate-900: var(--vscode-foreground);
+  --gitoza-slate-950: var(--vscode-foreground);
+
+  /* Non-inverted */
+  --gitoza-white: var(--vscode-editor-background);
+  --gitoza-black: var(--vscode-editor-foreground, var(--vscode-foreground));
+
+  /* Semantic tokens */
+  --gitoza-ink: var(--vscode-foreground);
+  --gitoza-muted: var(--vscode-descriptionForeground);
+  /* Long-form markdown / detail body — same primary as UI chrome (not editor-fg) */
+  --gitoza-prose: var(--vscode-foreground);
+  --gitoza-list-hover: var(--vscode-list-hoverBackground);
+  --gitoza-list-selected: var(--vscode-list-inactiveSelectionBackground);
+  --gitoza-primary: var(--vscode-button-background);
+  --gitoza-primary-dark: var(--vscode-button-hoverBackground);
+  --gitoza-panel: var(--vscode-sideBar-background);
+
+  /* Chromatic accents (no dark inversion; tints via color-mix in Tailwind) */
+  --gitoza-accent-indigo: var(--vscode-button-background);
+  --gitoza-accent-indigo-hover: var(--vscode-button-hoverBackground);
+  --gitoza-accent-focus: var(--vscode-focusBorder);
+  --gitoza-accent-blue: var(--vscode-textLink-foreground, var(--vscode-charts-blue));
+  --gitoza-accent-sky: var(--vscode-charts-blue, var(--vscode-textLink-foreground));
+  --gitoza-accent-cyan: var(--vscode-charts-blue, var(--vscode-textLink-foreground));
+  --gitoza-accent-green: var(--vscode-testing-iconPassed, var(--vscode-charts-green));
+  --gitoza-accent-emerald: var(--vscode-gitDecoration-addedResourceForeground, var(--vscode-testing-iconPassed));
+  --gitoza-accent-lime: var(--vscode-charts-green, var(--vscode-testing-iconPassed));
+  --gitoza-accent-teal: var(--vscode-charts-green, var(--vscode-testing-iconPassed));
+  --gitoza-accent-amber: var(--vscode-editorWarning-foreground, var(--vscode-charts-yellow));
+  --gitoza-accent-orange: var(--vscode-list-warningForeground, var(--vscode-editorWarning-foreground));
+  --gitoza-accent-yellow: var(--vscode-charts-yellow, var(--vscode-editorWarning-foreground));
+  --gitoza-accent-red: var(--vscode-errorForeground, var(--vscode-charts-red));
+  --gitoza-accent-rose: var(--vscode-charts-red, var(--vscode-errorForeground));
+  /* Prefer charts-purple — focusBorder is often low-contrast in Cursor Dark. */
+  --gitoza-accent-violet: var(--vscode-charts-purple, var(--vscode-charts-blue, var(--vscode-button-background)));
+  --gitoza-accent-purple: var(--vscode-charts-purple, var(--vscode-button-background));
+  --gitoza-accent-fuchsia: var(--vscode-charts-purple, var(--vscode-button-background));
+  --gitoza-accent-pink: var(--vscode-charts-red, var(--vscode-errorForeground));
+
+  /* On-accent label color for filled buttons/badges (not editor bg) */
+  --gitoza-on-accent: var(--vscode-button-foreground);
+
+  /* Mixed chromatic shades used by Tailwind */
+  --gitoza-indigo-50: color-mix(in srgb, var(--gitoza-accent-indigo) 12%, var(--vscode-editor-background));
+  --gitoza-indigo-100: color-mix(in srgb, var(--gitoza-accent-indigo) 20%, var(--vscode-editor-background));
+  --gitoza-indigo-200: color-mix(in srgb, var(--gitoza-accent-indigo) 35%, var(--vscode-editor-background));
+  --gitoza-indigo-300: color-mix(in srgb, var(--gitoza-accent-indigo) 50%, var(--vscode-editor-background));
+  --gitoza-indigo-400: color-mix(in srgb, var(--gitoza-accent-indigo) 85%, var(--vscode-editor-background));
+  --gitoza-indigo-500: var(--gitoza-accent-indigo);
+  --gitoza-indigo-600: var(--gitoza-accent-indigo);
+  --gitoza-indigo-700: var(--gitoza-accent-indigo-hover, var(--gitoza-accent-indigo));
+  --gitoza-indigo-800: color-mix(in srgb, var(--gitoza-accent-indigo) 75%, var(--vscode-foreground));
+  --gitoza-indigo-900: color-mix(in srgb, var(--gitoza-accent-indigo) 55%, var(--vscode-foreground));
+  --gitoza-indigo-950: color-mix(in srgb, var(--gitoza-accent-indigo) 40%, var(--vscode-foreground));
+
+  --gitoza-blue-50: color-mix(in srgb, var(--gitoza-accent-blue) 12%, var(--vscode-editor-background));
+  --gitoza-blue-100: color-mix(in srgb, var(--gitoza-accent-blue) 20%, var(--vscode-editor-background));
+  --gitoza-blue-200: color-mix(in srgb, var(--gitoza-accent-blue) 35%, var(--vscode-editor-background));
+  --gitoza-blue-300: color-mix(in srgb, var(--gitoza-accent-blue) 50%, var(--vscode-editor-background));
+  --gitoza-blue-400: color-mix(in srgb, var(--gitoza-accent-blue) 85%, var(--vscode-editor-background));
+  --gitoza-blue-500: var(--gitoza-accent-blue);
+  --gitoza-blue-600: var(--gitoza-accent-blue);
+  --gitoza-blue-700: color-mix(in srgb, var(--gitoza-accent-blue) 85%, var(--vscode-foreground));
+  --gitoza-blue-800: color-mix(in srgb, var(--gitoza-accent-blue) 70%, var(--vscode-foreground));
+  --gitoza-blue-900: color-mix(in srgb, var(--gitoza-accent-blue) 55%, var(--vscode-foreground));
+  --gitoza-blue-950: color-mix(in srgb, var(--gitoza-accent-blue) 40%, var(--vscode-foreground));
+
+  --gitoza-sky-50: color-mix(in srgb, var(--gitoza-accent-sky) 12%, var(--vscode-editor-background));
+  --gitoza-sky-100: color-mix(in srgb, var(--gitoza-accent-sky) 20%, var(--vscode-editor-background));
+  --gitoza-sky-200: color-mix(in srgb, var(--gitoza-accent-sky) 35%, var(--vscode-editor-background));
+  --gitoza-sky-300: color-mix(in srgb, var(--gitoza-accent-sky) 50%, var(--vscode-editor-background));
+  --gitoza-sky-400: color-mix(in srgb, var(--gitoza-accent-sky) 85%, var(--vscode-editor-background));
+  --gitoza-sky-500: var(--gitoza-accent-sky);
+  --gitoza-sky-600: var(--gitoza-accent-sky);
+  --gitoza-sky-700: color-mix(in srgb, var(--gitoza-accent-sky) 85%, var(--vscode-foreground));
+  --gitoza-sky-800: color-mix(in srgb, var(--gitoza-accent-sky) 70%, var(--vscode-foreground));
+  --gitoza-sky-900: color-mix(in srgb, var(--gitoza-accent-sky) 55%, var(--vscode-foreground));
+  --gitoza-sky-950: color-mix(in srgb, var(--gitoza-accent-sky) 40%, var(--vscode-foreground));
+
+  --gitoza-cyan-50: color-mix(in srgb, var(--gitoza-accent-cyan) 12%, var(--vscode-editor-background));
+  --gitoza-cyan-100: color-mix(in srgb, var(--gitoza-accent-cyan) 20%, var(--vscode-editor-background));
+  --gitoza-cyan-200: color-mix(in srgb, var(--gitoza-accent-cyan) 35%, var(--vscode-editor-background));
+  --gitoza-cyan-300: color-mix(in srgb, var(--gitoza-accent-cyan) 50%, var(--vscode-editor-background));
+  --gitoza-cyan-400: color-mix(in srgb, var(--gitoza-accent-cyan) 85%, var(--vscode-editor-background));
+  --gitoza-cyan-500: var(--gitoza-accent-cyan);
+  --gitoza-cyan-600: var(--gitoza-accent-cyan);
+  --gitoza-cyan-700: color-mix(in srgb, var(--gitoza-accent-cyan) 85%, var(--vscode-foreground));
+  --gitoza-cyan-800: color-mix(in srgb, var(--gitoza-accent-cyan) 70%, var(--vscode-foreground));
+  --gitoza-cyan-900: color-mix(in srgb, var(--gitoza-accent-cyan) 55%, var(--vscode-foreground));
+  --gitoza-cyan-950: color-mix(in srgb, var(--gitoza-accent-cyan) 40%, var(--vscode-foreground));
+
+  --gitoza-green-50: color-mix(in srgb, var(--gitoza-accent-green) 12%, var(--vscode-editor-background));
+  --gitoza-green-100: color-mix(in srgb, var(--gitoza-accent-green) 20%, var(--vscode-editor-background));
+  --gitoza-green-200: color-mix(in srgb, var(--gitoza-accent-green) 35%, var(--vscode-editor-background));
+  --gitoza-green-300: color-mix(in srgb, var(--gitoza-accent-green) 50%, var(--vscode-editor-background));
+  --gitoza-green-400: color-mix(in srgb, var(--gitoza-accent-green) 85%, var(--vscode-editor-background));
+  --gitoza-green-500: var(--gitoza-accent-green);
+  --gitoza-green-600: var(--gitoza-accent-green);
+  --gitoza-green-700: color-mix(in srgb, var(--gitoza-accent-green) 85%, var(--vscode-foreground));
+  --gitoza-green-800: color-mix(in srgb, var(--gitoza-accent-green) 70%, var(--vscode-foreground));
+  --gitoza-green-900: color-mix(in srgb, var(--gitoza-accent-green) 55%, var(--vscode-foreground));
+  --gitoza-green-950: color-mix(in srgb, var(--gitoza-accent-green) 40%, var(--vscode-foreground));
+
+  --gitoza-emerald-50: color-mix(in srgb, var(--gitoza-accent-emerald) 12%, var(--vscode-editor-background));
+  --gitoza-emerald-100: color-mix(in srgb, var(--gitoza-accent-emerald) 20%, var(--vscode-editor-background));
+  --gitoza-emerald-200: color-mix(in srgb, var(--gitoza-accent-emerald) 35%, var(--vscode-editor-background));
+  --gitoza-emerald-300: color-mix(in srgb, var(--gitoza-accent-emerald) 50%, var(--vscode-editor-background));
+  --gitoza-emerald-400: color-mix(in srgb, var(--gitoza-accent-emerald) 85%, var(--vscode-editor-background));
+  --gitoza-emerald-500: var(--gitoza-accent-emerald);
+  --gitoza-emerald-600: var(--gitoza-accent-emerald);
+  --gitoza-emerald-700: color-mix(in srgb, var(--gitoza-accent-emerald) 85%, var(--vscode-foreground));
+  --gitoza-emerald-800: color-mix(in srgb, var(--gitoza-accent-emerald) 70%, var(--vscode-foreground));
+  --gitoza-emerald-900: color-mix(in srgb, var(--gitoza-accent-emerald) 55%, var(--vscode-foreground));
+  --gitoza-emerald-950: color-mix(in srgb, var(--gitoza-accent-emerald) 40%, var(--vscode-foreground));
+
+  --gitoza-lime-50: color-mix(in srgb, var(--gitoza-accent-lime) 12%, var(--vscode-editor-background));
+  --gitoza-lime-100: color-mix(in srgb, var(--gitoza-accent-lime) 20%, var(--vscode-editor-background));
+  --gitoza-lime-200: color-mix(in srgb, var(--gitoza-accent-lime) 35%, var(--vscode-editor-background));
+  --gitoza-lime-300: color-mix(in srgb, var(--gitoza-accent-lime) 50%, var(--vscode-editor-background));
+  --gitoza-lime-400: color-mix(in srgb, var(--gitoza-accent-lime) 85%, var(--vscode-editor-background));
+  --gitoza-lime-500: var(--gitoza-accent-lime);
+  --gitoza-lime-600: var(--gitoza-accent-lime);
+  --gitoza-lime-700: color-mix(in srgb, var(--gitoza-accent-lime) 85%, var(--vscode-foreground));
+  --gitoza-lime-800: color-mix(in srgb, var(--gitoza-accent-lime) 70%, var(--vscode-foreground));
+  --gitoza-lime-900: color-mix(in srgb, var(--gitoza-accent-lime) 55%, var(--vscode-foreground));
+  --gitoza-lime-950: color-mix(in srgb, var(--gitoza-accent-lime) 40%, var(--vscode-foreground));
+
+  --gitoza-teal-50: color-mix(in srgb, var(--gitoza-accent-teal) 12%, var(--vscode-editor-background));
+  --gitoza-teal-100: color-mix(in srgb, var(--gitoza-accent-teal) 20%, var(--vscode-editor-background));
+  --gitoza-teal-200: color-mix(in srgb, var(--gitoza-accent-teal) 35%, var(--vscode-editor-background));
+  --gitoza-teal-300: color-mix(in srgb, var(--gitoza-accent-teal) 50%, var(--vscode-editor-background));
+  --gitoza-teal-400: color-mix(in srgb, var(--gitoza-accent-teal) 85%, var(--vscode-editor-background));
+  --gitoza-teal-500: var(--gitoza-accent-teal);
+  --gitoza-teal-600: var(--gitoza-accent-teal);
+  --gitoza-teal-700: color-mix(in srgb, var(--gitoza-accent-teal) 85%, var(--vscode-foreground));
+  --gitoza-teal-800: color-mix(in srgb, var(--gitoza-accent-teal) 70%, var(--vscode-foreground));
+  --gitoza-teal-900: color-mix(in srgb, var(--gitoza-accent-teal) 55%, var(--vscode-foreground));
+  --gitoza-teal-950: color-mix(in srgb, var(--gitoza-accent-teal) 40%, var(--vscode-foreground));
+
+  --gitoza-amber-50: color-mix(in srgb, var(--gitoza-accent-amber) 12%, var(--vscode-editor-background));
+  --gitoza-amber-100: color-mix(in srgb, var(--gitoza-accent-amber) 20%, var(--vscode-editor-background));
+  --gitoza-amber-200: color-mix(in srgb, var(--gitoza-accent-amber) 35%, var(--vscode-editor-background));
+  --gitoza-amber-300: color-mix(in srgb, var(--gitoza-accent-amber) 50%, var(--vscode-editor-background));
+  --gitoza-amber-400: color-mix(in srgb, var(--gitoza-accent-amber) 85%, var(--vscode-editor-background));
+  --gitoza-amber-500: var(--gitoza-accent-amber);
+  --gitoza-amber-600: var(--gitoza-accent-amber);
+  --gitoza-amber-700: color-mix(in srgb, var(--gitoza-accent-amber) 85%, var(--vscode-foreground));
+  --gitoza-amber-800: color-mix(in srgb, var(--gitoza-accent-amber) 70%, var(--vscode-foreground));
+  --gitoza-amber-900: color-mix(in srgb, var(--gitoza-accent-amber) 55%, var(--vscode-foreground));
+  --gitoza-amber-950: color-mix(in srgb, var(--gitoza-accent-amber) 40%, var(--vscode-foreground));
+
+  --gitoza-orange-50: color-mix(in srgb, var(--gitoza-accent-orange) 12%, var(--vscode-editor-background));
+  --gitoza-orange-100: color-mix(in srgb, var(--gitoza-accent-orange) 20%, var(--vscode-editor-background));
+  --gitoza-orange-200: color-mix(in srgb, var(--gitoza-accent-orange) 35%, var(--vscode-editor-background));
+  --gitoza-orange-300: color-mix(in srgb, var(--gitoza-accent-orange) 50%, var(--vscode-editor-background));
+  --gitoza-orange-400: color-mix(in srgb, var(--gitoza-accent-orange) 85%, var(--vscode-editor-background));
+  --gitoza-orange-500: var(--gitoza-accent-orange);
+  --gitoza-orange-600: var(--gitoza-accent-orange);
+  --gitoza-orange-700: color-mix(in srgb, var(--gitoza-accent-orange) 85%, var(--vscode-foreground));
+  --gitoza-orange-800: color-mix(in srgb, var(--gitoza-accent-orange) 70%, var(--vscode-foreground));
+  --gitoza-orange-900: color-mix(in srgb, var(--gitoza-accent-orange) 55%, var(--vscode-foreground));
+  --gitoza-orange-950: color-mix(in srgb, var(--gitoza-accent-orange) 40%, var(--vscode-foreground));
+
+  --gitoza-yellow-50: color-mix(in srgb, var(--gitoza-accent-yellow) 12%, var(--vscode-editor-background));
+  --gitoza-yellow-100: color-mix(in srgb, var(--gitoza-accent-yellow) 20%, var(--vscode-editor-background));
+  --gitoza-yellow-200: color-mix(in srgb, var(--gitoza-accent-yellow) 35%, var(--vscode-editor-background));
+  --gitoza-yellow-300: color-mix(in srgb, var(--gitoza-accent-yellow) 50%, var(--vscode-editor-background));
+  --gitoza-yellow-400: color-mix(in srgb, var(--gitoza-accent-yellow) 85%, var(--vscode-editor-background));
+  --gitoza-yellow-500: var(--gitoza-accent-yellow);
+  --gitoza-yellow-600: var(--gitoza-accent-yellow);
+  --gitoza-yellow-700: color-mix(in srgb, var(--gitoza-accent-yellow) 85%, var(--vscode-foreground));
+  --gitoza-yellow-800: color-mix(in srgb, var(--gitoza-accent-yellow) 70%, var(--vscode-foreground));
+  --gitoza-yellow-900: color-mix(in srgb, var(--gitoza-accent-yellow) 55%, var(--vscode-foreground));
+  --gitoza-yellow-950: color-mix(in srgb, var(--gitoza-accent-yellow) 40%, var(--vscode-foreground));
+
+  --gitoza-red-50: color-mix(in srgb, var(--gitoza-accent-red) 12%, var(--vscode-editor-background));
+  --gitoza-red-100: color-mix(in srgb, var(--gitoza-accent-red) 20%, var(--vscode-editor-background));
+  --gitoza-red-200: color-mix(in srgb, var(--gitoza-accent-red) 35%, var(--vscode-editor-background));
+  --gitoza-red-300: color-mix(in srgb, var(--gitoza-accent-red) 50%, var(--vscode-editor-background));
+  --gitoza-red-400: color-mix(in srgb, var(--gitoza-accent-red) 85%, var(--vscode-editor-background));
+  --gitoza-red-500: var(--gitoza-accent-red);
+  --gitoza-red-600: var(--gitoza-accent-red);
+  --gitoza-red-700: color-mix(in srgb, var(--gitoza-accent-red) 85%, var(--vscode-foreground));
+  --gitoza-red-800: color-mix(in srgb, var(--gitoza-accent-red) 70%, var(--vscode-foreground));
+  --gitoza-red-900: color-mix(in srgb, var(--gitoza-accent-red) 55%, var(--vscode-foreground));
+  --gitoza-red-950: color-mix(in srgb, var(--gitoza-accent-red) 40%, var(--vscode-foreground));
+
+  --gitoza-rose-50: color-mix(in srgb, var(--gitoza-accent-rose) 12%, var(--vscode-editor-background));
+  --gitoza-rose-100: color-mix(in srgb, var(--gitoza-accent-rose) 20%, var(--vscode-editor-background));
+  --gitoza-rose-200: color-mix(in srgb, var(--gitoza-accent-rose) 35%, var(--vscode-editor-background));
+  --gitoza-rose-300: color-mix(in srgb, var(--gitoza-accent-rose) 50%, var(--vscode-editor-background));
+  --gitoza-rose-400: color-mix(in srgb, var(--gitoza-accent-rose) 85%, var(--vscode-editor-background));
+  --gitoza-rose-500: var(--gitoza-accent-rose);
+  --gitoza-rose-600: var(--gitoza-accent-rose);
+  --gitoza-rose-700: color-mix(in srgb, var(--gitoza-accent-rose) 85%, var(--vscode-foreground));
+  --gitoza-rose-800: color-mix(in srgb, var(--gitoza-accent-rose) 70%, var(--vscode-foreground));
+  --gitoza-rose-900: color-mix(in srgb, var(--gitoza-accent-rose) 55%, var(--vscode-foreground));
+  --gitoza-rose-950: color-mix(in srgb, var(--gitoza-accent-rose) 40%, var(--vscode-foreground));
+
+  --gitoza-violet-50: color-mix(in srgb, var(--gitoza-accent-violet) 12%, var(--vscode-editor-background));
+  --gitoza-violet-100: color-mix(in srgb, var(--gitoza-accent-violet) 20%, var(--vscode-editor-background));
+  --gitoza-violet-200: color-mix(in srgb, var(--gitoza-accent-violet) 35%, var(--vscode-editor-background));
+  --gitoza-violet-300: color-mix(in srgb, var(--gitoza-accent-violet) 50%, var(--vscode-editor-background));
+  --gitoza-violet-400: color-mix(in srgb, var(--gitoza-accent-violet) 85%, var(--vscode-editor-background));
+  --gitoza-violet-500: var(--gitoza-accent-violet);
+  --gitoza-violet-600: var(--gitoza-accent-violet);
+  --gitoza-violet-700: color-mix(in srgb, var(--gitoza-accent-violet) 85%, var(--vscode-foreground));
+  --gitoza-violet-800: color-mix(in srgb, var(--gitoza-accent-violet) 70%, var(--vscode-foreground));
+  --gitoza-violet-900: color-mix(in srgb, var(--gitoza-accent-violet) 55%, var(--vscode-foreground));
+  --gitoza-violet-950: color-mix(in srgb, var(--gitoza-accent-violet) 40%, var(--vscode-foreground));
+
+  --gitoza-purple-50: color-mix(in srgb, var(--gitoza-accent-purple) 12%, var(--vscode-editor-background));
+  --gitoza-purple-100: color-mix(in srgb, var(--gitoza-accent-purple) 20%, var(--vscode-editor-background));
+  --gitoza-purple-200: color-mix(in srgb, var(--gitoza-accent-purple) 35%, var(--vscode-editor-background));
+  --gitoza-purple-300: color-mix(in srgb, var(--gitoza-accent-purple) 50%, var(--vscode-editor-background));
+  --gitoza-purple-400: color-mix(in srgb, var(--gitoza-accent-purple) 85%, var(--vscode-editor-background));
+  --gitoza-purple-500: var(--gitoza-accent-purple);
+  --gitoza-purple-600: var(--gitoza-accent-purple);
+  --gitoza-purple-700: color-mix(in srgb, var(--gitoza-accent-purple) 85%, var(--vscode-foreground));
+  --gitoza-purple-800: color-mix(in srgb, var(--gitoza-accent-purple) 70%, var(--vscode-foreground));
+  --gitoza-purple-900: color-mix(in srgb, var(--gitoza-accent-purple) 55%, var(--vscode-foreground));
+  --gitoza-purple-950: color-mix(in srgb, var(--gitoza-accent-purple) 40%, var(--vscode-foreground));
+
+  --gitoza-fuchsia-50: color-mix(in srgb, var(--gitoza-accent-fuchsia) 12%, var(--vscode-editor-background));
+  --gitoza-fuchsia-100: color-mix(in srgb, var(--gitoza-accent-fuchsia) 20%, var(--vscode-editor-background));
+  --gitoza-fuchsia-200: color-mix(in srgb, var(--gitoza-accent-fuchsia) 35%, var(--vscode-editor-background));
+  --gitoza-fuchsia-300: color-mix(in srgb, var(--gitoza-accent-fuchsia) 50%, var(--vscode-editor-background));
+  --gitoza-fuchsia-400: color-mix(in srgb, var(--gitoza-accent-fuchsia) 85%, var(--vscode-editor-background));
+  --gitoza-fuchsia-500: var(--gitoza-accent-fuchsia);
+  --gitoza-fuchsia-600: var(--gitoza-accent-fuchsia);
+  --gitoza-fuchsia-700: color-mix(in srgb, var(--gitoza-accent-fuchsia) 85%, var(--vscode-foreground));
+  --gitoza-fuchsia-800: color-mix(in srgb, var(--gitoza-accent-fuchsia) 70%, var(--vscode-foreground));
+  --gitoza-fuchsia-900: color-mix(in srgb, var(--gitoza-accent-fuchsia) 55%, var(--vscode-foreground));
+  --gitoza-fuchsia-950: color-mix(in srgb, var(--gitoza-accent-fuchsia) 40%, var(--vscode-foreground));
+
+  --gitoza-pink-50: color-mix(in srgb, var(--gitoza-accent-pink) 12%, var(--vscode-editor-background));
+  --gitoza-pink-100: color-mix(in srgb, var(--gitoza-accent-pink) 20%, var(--vscode-editor-background));
+  --gitoza-pink-200: color-mix(in srgb, var(--gitoza-accent-pink) 35%, var(--vscode-editor-background));
+  --gitoza-pink-300: color-mix(in srgb, var(--gitoza-accent-pink) 50%, var(--vscode-editor-background));
+  --gitoza-pink-400: color-mix(in srgb, var(--gitoza-accent-pink) 85%, var(--vscode-editor-background));
+  --gitoza-pink-500: var(--gitoza-accent-pink);
+  --gitoza-pink-600: var(--gitoza-accent-pink);
+  --gitoza-pink-700: color-mix(in srgb, var(--gitoza-accent-pink) 85%, var(--vscode-foreground));
+  --gitoza-pink-800: color-mix(in srgb, var(--gitoza-accent-pink) 70%, var(--vscode-foreground));
+  --gitoza-pink-900: color-mix(in srgb, var(--gitoza-accent-pink) 55%, var(--vscode-foreground));
+  --gitoza-pink-950: color-mix(in srgb, var(--gitoza-accent-pink) 40%, var(--vscode-foreground));
+}
+
+/* Dark: invert neutral roles so bg-slate-50 / dark:bg-slate-950 both resolve to editor bg.
+   Chromatic extremes also invert so dark:text-*-50/100/200 stays light on dark fills. */
+html.dark {
+  --gitoza-slate-50: var(--vscode-foreground);
+  --gitoza-slate-100: var(--vscode-foreground);
+  --gitoza-slate-200: var(--vscode-foreground);
+  --gitoza-slate-300: var(--vscode-descriptionForeground);
+  --gitoza-slate-400: var(--vscode-descriptionForeground);
+  --gitoza-slate-500: var(--vscode-disabledForeground);
+  --gitoza-slate-600: var(--vscode-panel-border, var(--vscode-input-border));
+  --gitoza-slate-700: var(--vscode-list-hoverBackground);
+  --gitoza-slate-800: var(--vscode-sideBar-background);
+  --gitoza-slate-900: var(--vscode-editor-background);
+  --gitoza-slate-950: var(--vscode-editor-background);
+
+  /* indigo: low shades → light (mix into fg); high → dark (mix into editor bg) */
+  --gitoza-indigo-50: color-mix(in srgb, var(--gitoza-accent-indigo) 12%, var(--vscode-foreground));
+  --gitoza-indigo-100: color-mix(in srgb, var(--gitoza-accent-indigo) 20%, var(--vscode-foreground));
+  --gitoza-indigo-200: color-mix(in srgb, var(--gitoza-accent-indigo) 35%, var(--vscode-foreground));
+  --gitoza-indigo-300: color-mix(in srgb, var(--gitoza-accent-indigo) 50%, var(--vscode-foreground));
+  --gitoza-indigo-400: var(--gitoza-accent-indigo);
+  --gitoza-indigo-500: var(--gitoza-accent-indigo);
+  --gitoza-indigo-600: color-mix(in srgb, var(--gitoza-accent-indigo) 85%, var(--vscode-editor-background));
+  --gitoza-indigo-700: color-mix(in srgb, var(--gitoza-accent-indigo) 50%, var(--vscode-editor-background));
+  --gitoza-indigo-800: color-mix(in srgb, var(--gitoza-accent-indigo) 35%, var(--vscode-editor-background));
+  --gitoza-indigo-900: color-mix(in srgb, var(--gitoza-accent-indigo) 20%, var(--vscode-editor-background));
+  --gitoza-indigo-950: color-mix(in srgb, var(--gitoza-accent-indigo) 12%, var(--vscode-editor-background));
+
+  --gitoza-blue-50: color-mix(in srgb, var(--gitoza-accent-blue) 12%, var(--vscode-foreground));
+  --gitoza-blue-100: color-mix(in srgb, var(--gitoza-accent-blue) 20%, var(--vscode-foreground));
+  --gitoza-blue-200: color-mix(in srgb, var(--gitoza-accent-blue) 35%, var(--vscode-foreground));
+  --gitoza-blue-300: color-mix(in srgb, var(--gitoza-accent-blue) 50%, var(--vscode-foreground));
+  --gitoza-blue-400: var(--gitoza-accent-blue);
+  --gitoza-blue-500: var(--gitoza-accent-blue);
+  --gitoza-blue-600: color-mix(in srgb, var(--gitoza-accent-blue) 85%, var(--vscode-editor-background));
+  --gitoza-blue-700: color-mix(in srgb, var(--gitoza-accent-blue) 50%, var(--vscode-editor-background));
+  --gitoza-blue-800: color-mix(in srgb, var(--gitoza-accent-blue) 35%, var(--vscode-editor-background));
+  --gitoza-blue-900: color-mix(in srgb, var(--gitoza-accent-blue) 20%, var(--vscode-editor-background));
+  --gitoza-blue-950: color-mix(in srgb, var(--gitoza-accent-blue) 12%, var(--vscode-editor-background));
+
+  --gitoza-sky-50: color-mix(in srgb, var(--gitoza-accent-sky) 12%, var(--vscode-foreground));
+  --gitoza-sky-100: color-mix(in srgb, var(--gitoza-accent-sky) 20%, var(--vscode-foreground));
+  --gitoza-sky-200: color-mix(in srgb, var(--gitoza-accent-sky) 35%, var(--vscode-foreground));
+  --gitoza-sky-300: color-mix(in srgb, var(--gitoza-accent-sky) 50%, var(--vscode-foreground));
+  --gitoza-sky-400: var(--gitoza-accent-sky);
+  --gitoza-sky-500: var(--gitoza-accent-sky);
+  --gitoza-sky-600: color-mix(in srgb, var(--gitoza-accent-sky) 85%, var(--vscode-editor-background));
+  --gitoza-sky-700: color-mix(in srgb, var(--gitoza-accent-sky) 50%, var(--vscode-editor-background));
+  --gitoza-sky-800: color-mix(in srgb, var(--gitoza-accent-sky) 35%, var(--vscode-editor-background));
+  --gitoza-sky-900: color-mix(in srgb, var(--gitoza-accent-sky) 20%, var(--vscode-editor-background));
+  --gitoza-sky-950: color-mix(in srgb, var(--gitoza-accent-sky) 12%, var(--vscode-editor-background));
+
+  --gitoza-cyan-50: color-mix(in srgb, var(--gitoza-accent-cyan) 12%, var(--vscode-foreground));
+  --gitoza-cyan-100: color-mix(in srgb, var(--gitoza-accent-cyan) 20%, var(--vscode-foreground));
+  --gitoza-cyan-200: color-mix(in srgb, var(--gitoza-accent-cyan) 35%, var(--vscode-foreground));
+  --gitoza-cyan-300: color-mix(in srgb, var(--gitoza-accent-cyan) 50%, var(--vscode-foreground));
+  --gitoza-cyan-400: var(--gitoza-accent-cyan);
+  --gitoza-cyan-500: var(--gitoza-accent-cyan);
+  --gitoza-cyan-600: color-mix(in srgb, var(--gitoza-accent-cyan) 85%, var(--vscode-editor-background));
+  --gitoza-cyan-700: color-mix(in srgb, var(--gitoza-accent-cyan) 50%, var(--vscode-editor-background));
+  --gitoza-cyan-800: color-mix(in srgb, var(--gitoza-accent-cyan) 35%, var(--vscode-editor-background));
+  --gitoza-cyan-900: color-mix(in srgb, var(--gitoza-accent-cyan) 20%, var(--vscode-editor-background));
+  --gitoza-cyan-950: color-mix(in srgb, var(--gitoza-accent-cyan) 12%, var(--vscode-editor-background));
+
+  --gitoza-green-50: color-mix(in srgb, var(--gitoza-accent-green) 12%, var(--vscode-foreground));
+  --gitoza-green-100: color-mix(in srgb, var(--gitoza-accent-green) 20%, var(--vscode-foreground));
+  --gitoza-green-200: color-mix(in srgb, var(--gitoza-accent-green) 35%, var(--vscode-foreground));
+  --gitoza-green-300: color-mix(in srgb, var(--gitoza-accent-green) 50%, var(--vscode-foreground));
+  --gitoza-green-400: var(--gitoza-accent-green);
+  --gitoza-green-500: var(--gitoza-accent-green);
+  --gitoza-green-600: color-mix(in srgb, var(--gitoza-accent-green) 85%, var(--vscode-editor-background));
+  --gitoza-green-700: color-mix(in srgb, var(--gitoza-accent-green) 50%, var(--vscode-editor-background));
+  --gitoza-green-800: color-mix(in srgb, var(--gitoza-accent-green) 35%, var(--vscode-editor-background));
+  --gitoza-green-900: color-mix(in srgb, var(--gitoza-accent-green) 20%, var(--vscode-editor-background));
+  --gitoza-green-950: color-mix(in srgb, var(--gitoza-accent-green) 12%, var(--vscode-editor-background));
+
+  --gitoza-emerald-50: color-mix(in srgb, var(--gitoza-accent-emerald) 12%, var(--vscode-foreground));
+  --gitoza-emerald-100: color-mix(in srgb, var(--gitoza-accent-emerald) 20%, var(--vscode-foreground));
+  --gitoza-emerald-200: color-mix(in srgb, var(--gitoza-accent-emerald) 35%, var(--vscode-foreground));
+  --gitoza-emerald-300: color-mix(in srgb, var(--gitoza-accent-emerald) 50%, var(--vscode-foreground));
+  --gitoza-emerald-400: var(--gitoza-accent-emerald);
+  --gitoza-emerald-500: var(--gitoza-accent-emerald);
+  --gitoza-emerald-600: color-mix(in srgb, var(--gitoza-accent-emerald) 85%, var(--vscode-editor-background));
+  --gitoza-emerald-700: color-mix(in srgb, var(--gitoza-accent-emerald) 50%, var(--vscode-editor-background));
+  --gitoza-emerald-800: color-mix(in srgb, var(--gitoza-accent-emerald) 35%, var(--vscode-editor-background));
+  --gitoza-emerald-900: color-mix(in srgb, var(--gitoza-accent-emerald) 20%, var(--vscode-editor-background));
+  --gitoza-emerald-950: color-mix(in srgb, var(--gitoza-accent-emerald) 12%, var(--vscode-editor-background));
+
+  --gitoza-lime-50: color-mix(in srgb, var(--gitoza-accent-lime) 12%, var(--vscode-foreground));
+  --gitoza-lime-100: color-mix(in srgb, var(--gitoza-accent-lime) 20%, var(--vscode-foreground));
+  --gitoza-lime-200: color-mix(in srgb, var(--gitoza-accent-lime) 35%, var(--vscode-foreground));
+  --gitoza-lime-300: color-mix(in srgb, var(--gitoza-accent-lime) 50%, var(--vscode-foreground));
+  --gitoza-lime-400: var(--gitoza-accent-lime);
+  --gitoza-lime-500: var(--gitoza-accent-lime);
+  --gitoza-lime-600: color-mix(in srgb, var(--gitoza-accent-lime) 85%, var(--vscode-editor-background));
+  --gitoza-lime-700: color-mix(in srgb, var(--gitoza-accent-lime) 50%, var(--vscode-editor-background));
+  --gitoza-lime-800: color-mix(in srgb, var(--gitoza-accent-lime) 35%, var(--vscode-editor-background));
+  --gitoza-lime-900: color-mix(in srgb, var(--gitoza-accent-lime) 20%, var(--vscode-editor-background));
+  --gitoza-lime-950: color-mix(in srgb, var(--gitoza-accent-lime) 12%, var(--vscode-editor-background));
+
+  --gitoza-teal-50: color-mix(in srgb, var(--gitoza-accent-teal) 12%, var(--vscode-foreground));
+  --gitoza-teal-100: color-mix(in srgb, var(--gitoza-accent-teal) 20%, var(--vscode-foreground));
+  --gitoza-teal-200: color-mix(in srgb, var(--gitoza-accent-teal) 35%, var(--vscode-foreground));
+  --gitoza-teal-300: color-mix(in srgb, var(--gitoza-accent-teal) 50%, var(--vscode-foreground));
+  --gitoza-teal-400: var(--gitoza-accent-teal);
+  --gitoza-teal-500: var(--gitoza-accent-teal);
+  --gitoza-teal-600: color-mix(in srgb, var(--gitoza-accent-teal) 85%, var(--vscode-editor-background));
+  --gitoza-teal-700: color-mix(in srgb, var(--gitoza-accent-teal) 50%, var(--vscode-editor-background));
+  --gitoza-teal-800: color-mix(in srgb, var(--gitoza-accent-teal) 35%, var(--vscode-editor-background));
+  --gitoza-teal-900: color-mix(in srgb, var(--gitoza-accent-teal) 20%, var(--vscode-editor-background));
+  --gitoza-teal-950: color-mix(in srgb, var(--gitoza-accent-teal) 12%, var(--vscode-editor-background));
+
+  --gitoza-amber-50: color-mix(in srgb, var(--gitoza-accent-amber) 12%, var(--vscode-foreground));
+  --gitoza-amber-100: color-mix(in srgb, var(--gitoza-accent-amber) 20%, var(--vscode-foreground));
+  --gitoza-amber-200: color-mix(in srgb, var(--gitoza-accent-amber) 35%, var(--vscode-foreground));
+  --gitoza-amber-300: color-mix(in srgb, var(--gitoza-accent-amber) 50%, var(--vscode-foreground));
+  --gitoza-amber-400: var(--gitoza-accent-amber);
+  --gitoza-amber-500: var(--gitoza-accent-amber);
+  --gitoza-amber-600: color-mix(in srgb, var(--gitoza-accent-amber) 85%, var(--vscode-editor-background));
+  --gitoza-amber-700: color-mix(in srgb, var(--gitoza-accent-amber) 50%, var(--vscode-editor-background));
+  --gitoza-amber-800: color-mix(in srgb, var(--gitoza-accent-amber) 35%, var(--vscode-editor-background));
+  --gitoza-amber-900: color-mix(in srgb, var(--gitoza-accent-amber) 20%, var(--vscode-editor-background));
+  --gitoza-amber-950: color-mix(in srgb, var(--gitoza-accent-amber) 12%, var(--vscode-editor-background));
+
+  --gitoza-orange-50: color-mix(in srgb, var(--gitoza-accent-orange) 12%, var(--vscode-foreground));
+  --gitoza-orange-100: color-mix(in srgb, var(--gitoza-accent-orange) 20%, var(--vscode-foreground));
+  --gitoza-orange-200: color-mix(in srgb, var(--gitoza-accent-orange) 35%, var(--vscode-foreground));
+  --gitoza-orange-300: color-mix(in srgb, var(--gitoza-accent-orange) 50%, var(--vscode-foreground));
+  --gitoza-orange-400: var(--gitoza-accent-orange);
+  --gitoza-orange-500: var(--gitoza-accent-orange);
+  --gitoza-orange-600: color-mix(in srgb, var(--gitoza-accent-orange) 85%, var(--vscode-editor-background));
+  --gitoza-orange-700: color-mix(in srgb, var(--gitoza-accent-orange) 50%, var(--vscode-editor-background));
+  --gitoza-orange-800: color-mix(in srgb, var(--gitoza-accent-orange) 35%, var(--vscode-editor-background));
+  --gitoza-orange-900: color-mix(in srgb, var(--gitoza-accent-orange) 20%, var(--vscode-editor-background));
+  --gitoza-orange-950: color-mix(in srgb, var(--gitoza-accent-orange) 12%, var(--vscode-editor-background));
+
+  --gitoza-yellow-50: color-mix(in srgb, var(--gitoza-accent-yellow) 12%, var(--vscode-foreground));
+  --gitoza-yellow-100: color-mix(in srgb, var(--gitoza-accent-yellow) 20%, var(--vscode-foreground));
+  --gitoza-yellow-200: color-mix(in srgb, var(--gitoza-accent-yellow) 35%, var(--vscode-foreground));
+  --gitoza-yellow-300: color-mix(in srgb, var(--gitoza-accent-yellow) 50%, var(--vscode-foreground));
+  --gitoza-yellow-400: var(--gitoza-accent-yellow);
+  --gitoza-yellow-500: var(--gitoza-accent-yellow);
+  --gitoza-yellow-600: color-mix(in srgb, var(--gitoza-accent-yellow) 85%, var(--vscode-editor-background));
+  --gitoza-yellow-700: color-mix(in srgb, var(--gitoza-accent-yellow) 50%, var(--vscode-editor-background));
+  --gitoza-yellow-800: color-mix(in srgb, var(--gitoza-accent-yellow) 35%, var(--vscode-editor-background));
+  --gitoza-yellow-900: color-mix(in srgb, var(--gitoza-accent-yellow) 20%, var(--vscode-editor-background));
+  --gitoza-yellow-950: color-mix(in srgb, var(--gitoza-accent-yellow) 12%, var(--vscode-editor-background));
+
+  --gitoza-red-50: color-mix(in srgb, var(--gitoza-accent-red) 12%, var(--vscode-foreground));
+  --gitoza-red-100: color-mix(in srgb, var(--gitoza-accent-red) 20%, var(--vscode-foreground));
+  --gitoza-red-200: color-mix(in srgb, var(--gitoza-accent-red) 35%, var(--vscode-foreground));
+  --gitoza-red-300: color-mix(in srgb, var(--gitoza-accent-red) 50%, var(--vscode-foreground));
+  --gitoza-red-400: var(--gitoza-accent-red);
+  --gitoza-red-500: var(--gitoza-accent-red);
+  --gitoza-red-600: color-mix(in srgb, var(--gitoza-accent-red) 85%, var(--vscode-editor-background));
+  --gitoza-red-700: color-mix(in srgb, var(--gitoza-accent-red) 50%, var(--vscode-editor-background));
+  --gitoza-red-800: color-mix(in srgb, var(--gitoza-accent-red) 35%, var(--vscode-editor-background));
+  --gitoza-red-900: color-mix(in srgb, var(--gitoza-accent-red) 20%, var(--vscode-editor-background));
+  --gitoza-red-950: color-mix(in srgb, var(--gitoza-accent-red) 12%, var(--vscode-editor-background));
+
+  --gitoza-rose-50: color-mix(in srgb, var(--gitoza-accent-rose) 12%, var(--vscode-foreground));
+  --gitoza-rose-100: color-mix(in srgb, var(--gitoza-accent-rose) 20%, var(--vscode-foreground));
+  --gitoza-rose-200: color-mix(in srgb, var(--gitoza-accent-rose) 35%, var(--vscode-foreground));
+  --gitoza-rose-300: color-mix(in srgb, var(--gitoza-accent-rose) 50%, var(--vscode-foreground));
+  --gitoza-rose-400: var(--gitoza-accent-rose);
+  --gitoza-rose-500: var(--gitoza-accent-rose);
+  --gitoza-rose-600: color-mix(in srgb, var(--gitoza-accent-rose) 85%, var(--vscode-editor-background));
+  --gitoza-rose-700: color-mix(in srgb, var(--gitoza-accent-rose) 50%, var(--vscode-editor-background));
+  --gitoza-rose-800: color-mix(in srgb, var(--gitoza-accent-rose) 35%, var(--vscode-editor-background));
+  --gitoza-rose-900: color-mix(in srgb, var(--gitoza-accent-rose) 20%, var(--vscode-editor-background));
+  --gitoza-rose-950: color-mix(in srgb, var(--gitoza-accent-rose) 12%, var(--vscode-editor-background));
+
+  --gitoza-violet-50: color-mix(in srgb, var(--gitoza-accent-violet) 12%, var(--vscode-foreground));
+  --gitoza-violet-100: color-mix(in srgb, var(--gitoza-accent-violet) 20%, var(--vscode-foreground));
+  --gitoza-violet-200: color-mix(in srgb, var(--gitoza-accent-violet) 35%, var(--vscode-foreground));
+  --gitoza-violet-300: color-mix(in srgb, var(--gitoza-accent-violet) 50%, var(--vscode-foreground));
+  --gitoza-violet-400: var(--gitoza-accent-violet);
+  --gitoza-violet-500: var(--gitoza-accent-violet);
+  --gitoza-violet-600: color-mix(in srgb, var(--gitoza-accent-violet) 85%, var(--vscode-editor-background));
+  --gitoza-violet-700: color-mix(in srgb, var(--gitoza-accent-violet) 50%, var(--vscode-editor-background));
+  --gitoza-violet-800: color-mix(in srgb, var(--gitoza-accent-violet) 35%, var(--vscode-editor-background));
+  --gitoza-violet-900: color-mix(in srgb, var(--gitoza-accent-violet) 20%, var(--vscode-editor-background));
+  --gitoza-violet-950: color-mix(in srgb, var(--gitoza-accent-violet) 12%, var(--vscode-editor-background));
+
+  --gitoza-purple-50: color-mix(in srgb, var(--gitoza-accent-purple) 12%, var(--vscode-foreground));
+  --gitoza-purple-100: color-mix(in srgb, var(--gitoza-accent-purple) 20%, var(--vscode-foreground));
+  --gitoza-purple-200: color-mix(in srgb, var(--gitoza-accent-purple) 35%, var(--vscode-foreground));
+  --gitoza-purple-300: color-mix(in srgb, var(--gitoza-accent-purple) 50%, var(--vscode-foreground));
+  --gitoza-purple-400: var(--gitoza-accent-purple);
+  --gitoza-purple-500: var(--gitoza-accent-purple);
+  --gitoza-purple-600: color-mix(in srgb, var(--gitoza-accent-purple) 85%, var(--vscode-editor-background));
+  --gitoza-purple-700: color-mix(in srgb, var(--gitoza-accent-purple) 50%, var(--vscode-editor-background));
+  --gitoza-purple-800: color-mix(in srgb, var(--gitoza-accent-purple) 35%, var(--vscode-editor-background));
+  --gitoza-purple-900: color-mix(in srgb, var(--gitoza-accent-purple) 20%, var(--vscode-editor-background));
+  --gitoza-purple-950: color-mix(in srgb, var(--gitoza-accent-purple) 12%, var(--vscode-editor-background));
+
+  --gitoza-fuchsia-50: color-mix(in srgb, var(--gitoza-accent-fuchsia) 12%, var(--vscode-foreground));
+  --gitoza-fuchsia-100: color-mix(in srgb, var(--gitoza-accent-fuchsia) 20%, var(--vscode-foreground));
+  --gitoza-fuchsia-200: color-mix(in srgb, var(--gitoza-accent-fuchsia) 35%, var(--vscode-foreground));
+  --gitoza-fuchsia-300: color-mix(in srgb, var(--gitoza-accent-fuchsia) 50%, var(--vscode-foreground));
+  --gitoza-fuchsia-400: var(--gitoza-accent-fuchsia);
+  --gitoza-fuchsia-500: var(--gitoza-accent-fuchsia);
+  --gitoza-fuchsia-600: color-mix(in srgb, var(--gitoza-accent-fuchsia) 85%, var(--vscode-editor-background));
+  --gitoza-fuchsia-700: color-mix(in srgb, var(--gitoza-accent-fuchsia) 50%, var(--vscode-editor-background));
+  --gitoza-fuchsia-800: color-mix(in srgb, var(--gitoza-accent-fuchsia) 35%, var(--vscode-editor-background));
+  --gitoza-fuchsia-900: color-mix(in srgb, var(--gitoza-accent-fuchsia) 20%, var(--vscode-editor-background));
+  --gitoza-fuchsia-950: color-mix(in srgb, var(--gitoza-accent-fuchsia) 12%, var(--vscode-editor-background));
+
+  --gitoza-pink-50: color-mix(in srgb, var(--gitoza-accent-pink) 12%, var(--vscode-foreground));
+  --gitoza-pink-100: color-mix(in srgb, var(--gitoza-accent-pink) 20%, var(--vscode-foreground));
+  --gitoza-pink-200: color-mix(in srgb, var(--gitoza-accent-pink) 35%, var(--vscode-foreground));
+  --gitoza-pink-300: color-mix(in srgb, var(--gitoza-accent-pink) 50%, var(--vscode-foreground));
+  --gitoza-pink-400: var(--gitoza-accent-pink);
+  --gitoza-pink-500: var(--gitoza-accent-pink);
+  --gitoza-pink-600: color-mix(in srgb, var(--gitoza-accent-pink) 85%, var(--vscode-editor-background));
+  --gitoza-pink-700: color-mix(in srgb, var(--gitoza-accent-pink) 50%, var(--vscode-editor-background));
+  --gitoza-pink-800: color-mix(in srgb, var(--gitoza-accent-pink) 35%, var(--vscode-editor-background));
+  --gitoza-pink-900: color-mix(in srgb, var(--gitoza-accent-pink) 20%, var(--vscode-editor-background));
+  --gitoza-pink-950: color-mix(in srgb, var(--gitoza-accent-pink) 12%, var(--vscode-editor-background));
+}
+
+/*
+ * Standalone Vite (no vscode-host): provide --vscode-* fallbacks so pages still render.
+ * Never set these on body.vscode-host — that would fight the workbench.
+ */
+body:not(.vscode-host) {
+  --vscode-font-size: 13px;
+  --vscode-font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --vscode-editor-font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --vscode-foreground: #0f172a;
+  --vscode-editor-foreground: #0f172a;
+  --vscode-editor-background: #ffffff;
+  --vscode-sideBar-background: #f8fafc;
+  --vscode-list-hoverBackground: #f1f5f9;
+  --vscode-list-inactiveSelectionBackground: #e2e8f0;
+  --vscode-panel-border: #cbd5e1;
+  --vscode-input-border: #cbd5e1;
+  --vscode-disabledForeground: #94a3b8;
+  --vscode-descriptionForeground: #64748b;
+  --vscode-button-background: #4f46e5;
+  --vscode-button-hoverBackground: #4338ca;
+  --vscode-button-foreground: #ffffff;
+  --vscode-focusBorder: #6366f1;
+  --vscode-textLink-foreground: #2563eb;
+  --vscode-charts-blue: #3b82f6;
+  --vscode-charts-green: #22c55e;
+  --vscode-charts-yellow: #eab308;
+  --vscode-charts-red: #ef4444;
+  --vscode-charts-purple: #a855f7;
+  --vscode-testing-iconPassed: #16a34a;
+  --vscode-gitDecoration-addedResourceForeground: #059669;
+  --vscode-editorWarning-foreground: #d97706;
+  --vscode-list-warningForeground: #ea580c;
+  --vscode-errorForeground: #dc2626;
+  --vscode-inputValidation-errorBackground: #fecaca;
+  --vscode-scrollbarSlider-background: #94a3b8;
+  --vscode-scrollbarSlider-hoverBackground: #64748b;
+  --vscode-widget-shadow: rgba(0, 0, 0, 0.36);
+  --vscode-editorHoverWidget-background: #e2e8f0;
+  --vscode-textPreformat-foreground: #334155;
+  --vscode-debugTokenExpression-name: #7c3aed;
+  --vscode-debugTokenExpression-string: #059669;
+  --vscode-debugTokenExpression-number: #ca8a04;
+  --vscode-debugTokenExpression-boolean: #2563eb;
+}
+
+html.dark body:not(.vscode-host) {
+  --vscode-foreground: #e2e8f0;
+  --vscode-editor-foreground: #e2e8f0;
+  --vscode-editor-background: #0f172a;
+  --vscode-sideBar-background: #1e293b;
+  --vscode-list-hoverBackground: #334155;
+  --vscode-list-inactiveSelectionBackground: #334155;
+  --vscode-panel-border: #475569;
+  --vscode-input-border: #475569;
+  --vscode-disabledForeground: #64748b;
+  --vscode-descriptionForeground: #94a3b8;
+  --vscode-button-background: #6366f1;
+  --vscode-button-hoverBackground: #818cf8;
+  --vscode-button-foreground: #ffffff;
+  --vscode-focusBorder: #818cf8;
+  --vscode-textLink-foreground: #60a5fa;
+  --vscode-charts-blue: #60a5fa;
+  --vscode-charts-green: #4ade80;
+  --vscode-charts-yellow: #facc15;
+  --vscode-charts-red: #f87171;
+  --vscode-charts-purple: #c084fc;
+  --vscode-testing-iconPassed: #4ade80;
+  --vscode-gitDecoration-addedResourceForeground: #34d399;
+  --vscode-editorWarning-foreground: #fbbf24;
+  --vscode-list-warningForeground: #fb923c;
+  --vscode-errorForeground: #f87171;
+  --vscode-inputValidation-errorBackground: #7f1d1d;
+  --vscode-scrollbarSlider-background: #64748b;
+  --vscode-scrollbarSlider-hoverBackground: #94a3b8;
+  --vscode-editorHoverWidget-background: #475569;
+  --vscode-textPreformat-foreground: #cbd5e1;
+  --vscode-debugTokenExpression-name: #c4b5fd;
+  --vscode-debugTokenExpression-string: #86efac;
+  --vscode-debugTokenExpression-number: #fcd34d;
+  --vscode-debugTokenExpression-boolean: #7dd3fc;
+}
+
+/* Detail markdown body: editor foreground for reading contrast (VS Code token). */
+.prose-rex {
+  color: var(--gitoza-prose);
+}
+
+/* Case body code blocks: VS Code token colors */
+.dark .prose-rex pre code.hljs {
+  background: transparent;
+  color: var(--vscode-editor-foreground, var(--vscode-foreground));
+}
+.dark .prose-rex .hljs-comment,
+.dark .prose-rex .hljs-quote {
+  color: var(--vscode-descriptionForeground);
+}
+.dark .prose-rex .hljs-keyword,
+.dark .prose-rex .hljs-selector-tag,
+.dark .prose-rex .hljs-meta .hljs-keyword {
+  color: var(--vscode-debugTokenExpression-name, var(--gitoza-accent-violet));
+}
+.dark .prose-rex .hljs-string,
+.dark .prose-rex .hljs-attr,
+.dark .prose-rex .hljs-symbol,
+.dark .prose-rex .hljs-bullet {
+  color: var(--vscode-debugTokenExpression-string, var(--gitoza-accent-green));
+}
+.dark .prose-rex .hljs-title,
+.dark .prose-rex .hljs-section,
+.dark .prose-rex .hljs-name {
+  color: var(--vscode-debugTokenExpression-boolean, var(--gitoza-accent-blue));
+}
+.dark .prose-rex .hljs-number,
+.dark .prose-rex .hljs-literal {
+  color: var(--vscode-debugTokenExpression-number, var(--gitoza-accent-yellow));
+}
+
+/* Single-page shell: prevent document scroll (nested panels already scroll). Avoids double
+   scrollbars on Dashboard / tree views and reduces overscroll revealing the viewport edge. */
+html,
+body,
+#root {
+  width: 100%;
+  height: 100vh;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Match VS Code workbench typography; fallbacks for Vite dev outside the extension host.
+   --gitoza-ui-scale is adjusted by useWebviewZoom (Ctrl/Cmd ± / wheel). */
+html {
+  --gitoza-ui-scale: 1;
+  font-size: calc(var(--vscode-font-size, 13px) * var(--gitoza-ui-scale));
+}
+
+body {
+  font-family: var(
+    --vscode-font-family,
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif
+  );
+  @apply bg-slate-50 text-ink antialiased dark:bg-slate-950 dark:text-slate-100;
+}
+
+body.vscode-host {
+  color: var(--vscode-foreground);
+  background-color: var(--vscode-editor-background);
+}
+
+body.vscode-host .font-mono,
+body.vscode-host code,
+body.vscode-host pre code {
+  font-family: var(
+    --vscode-editor-font-family,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace
+  );
+}
+
+/* macOS overlay title bar: drag region under native traffic lights. */
+.app-titlebar {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.app-titlebar-drag {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.app-titlebar button {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+@keyframes data-flash {
+  0% { background-color: transparent; }
+  30% {
+    background-color: color-mix(
+      in srgb,
+      var(--vscode-focusBorder, var(--gitoza-accent-focus)) 8%,
+      transparent
+    );
+  }
+  100% { background-color: transparent; }
+}
+
+.animate-data-flash {
+  animation: data-flash 0.5s ease-out;
+}
+
+@keyframes dropdown-enter {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-dropdown-enter {
+  animation: dropdown-enter 0.15s ease-out forwards;
+}
+
+/* Detail drawer: overlay fade-in */
+@keyframes overlay-fadein {
+  from {
+    background-color: color-mix(
+      in srgb,
+      var(--vscode-widget-shadow, var(--gitoza-black)) 0%,
+      transparent
+    );
+  }
+  to {
+    background-color: color-mix(
+      in srgb,
+      var(--vscode-widget-shadow, var(--gitoza-black)) 40%,
+      transparent
+    );
+  }
+}
+.animate-overlay-fadein {
+  animation: overlay-fadein 0.2s ease-out forwards;
+  background-color: color-mix(
+    in srgb,
+    var(--vscode-widget-shadow, var(--gitoza-black)) 40%,
+    transparent
+  );
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+/* Detail drawer: panel slide-in from right */
+@keyframes drawer-slidein {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0);    opacity: 1; }
+}
+.animate-drawer-slidein {
+  animation: drawer-slidein 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Thin scrollbar using VS Code slider tokens */
+.main-content-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--vscode-scrollbarSlider-background) transparent;
+}
+
+.main-content-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.main-content-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.main-content-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--vscode-scrollbarSlider-background);
+  border-radius: 4px;
+}
+
+.main-content-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--vscode-scrollbarSlider-hoverBackground);
+}
+
+/* Tags chip input: hide native / webview focus chrome on the inner field. */
+.tag-inline-input {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.tag-inline-input:focus,
+.tag-inline-input:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+}
+
+/* VS Code/Cursor :focus { outline-color: var(--vscode-focusBorder) } recolors
+   Tailwind outline-none (2px solid transparent) into a visible orange frame. */
+.outline-none:focus,
+.outline-none:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+}

@@ -1,0 +1,727 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Save, Trash2 } from "lucide-react";
+import TestRepositoryThreeColumnLayout from "../components/TestRepositoryThreeColumnLayout";
+import RepositoryFolderTree from "../components/RepositoryFolderTree";
+import RunPaginatedCaseList from "../components/RunPaginatedCaseList";
+import CaseDetailView from "../components/CaseDetailView";
+import DetailPanelEmpty from "../components/DetailPanelEmpty";
+import DetailPanelLoading from "../components/DetailPanelLoading";
+import UnsavedChangesDialog from "../components/UnsavedChangesDialog";
+import ContextMenu from "../components/ContextMenu";
+import SidebarSection from "../components/SidebarSection";
+import TitleBarAddButton from "../components/TitleBarAddButton";
+import TreeToolbar from "../components/TreeToolbar";
+import { useConfirm } from "../components/ConfirmProvider";
+import { useRunResultDraft } from "../hooks/useRunResultDraft";
+import { useRunBrowseState } from "../hooks/useRunBrowseState";
+import AddCasesToRunPage from "./AddCasesToRunPage";
+import {
+  addRunCases,
+  createRun,
+  deleteRun,
+  getCaseDetail,
+  getRunDetail,
+  initializeRunsRoot,
+  listRuns,
+  removeRunCase,
+  saveRunResults,
+} from "../services/api";
+import { onCasesUpdated, onRunsUpdated } from "../api/vscodeApi";
+import { TestCaseIcon } from "../components/TestEntityIcons";
+import { countResultsFromCases } from "../utils/applyPendingRunResults";
+import { collectPathKeyForFolderPath } from "../utils/caseTree";
+import { browseColumnNoSelect } from "../utils/layoutClasses";
+import { filterTreeToOpenedRoot } from "../utils/openFocusTreeFilter";
+import {
+  buildGroupedRunCaseListEntries,
+  buildUnifiedRunTree,
+  findRunFolderDisplayName,
+  parseRunTreePath,
+} from "../utils/runCaseTree";
+import { displayNameFromSanitized, sanitizeNameForPath } from "../utils/sanitize";
+
+const ACTIVE_REPO = "vscode";
+
+export default function TestRunPage({
+  hasCasesRoot,
+  hasRunsRoot,
+  onRunsRootInitialized,
+  onDirtyChange,
+  registerLeaveHandler,
+}) {
+  const confirm = useConfirm();
+  const [runs, setRuns] = useState([]);
+  const [selectedRunId, setSelectedRunId] = useState(null);
+  const [cachedRunDetails, setCachedRunDetails] = useState({});
+  const [runDetailLoading, setRunDetailLoading] = useState(false);
+  const [selectedCasePath, setSelectedCasePath] = useState(null);
+  const [caseDetail, setCaseDetail] = useState(null);
+  const [caseDetailLoading, setCaseDetailLoading] = useState(false);
+  const [creatingRun, setCreatingRun] = useState(false);
+  const [runsReady, setRunsReady] = useState(false);
+  const [addCasesRunId, setAddCasesRunId] = useState(null);
+  const [addCasesRunName, setAddCasesRunName] = useState(null);
+  const [caseListPage, setCaseListPage] = useState(1);
+  const [unsavedDialog, setUnsavedDialog] = useState(null);
+  const [runContextMenu, setRunContextMenu] = useState(null);
+
+  const isDirtyRef = useRef(false);
+
+  const {
+    displayDetail,
+    isDirty,
+    saving,
+    saveError,
+    setResult,
+    save,
+    discard,
+    resetFromServer,
+  } = useRunResultDraft({
+    runId: selectedRunId,
+    saveRunResults,
+  });
+
+  isDirtyRef.current = isDirty;
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  const loadRuns = useCallback(async () => {
+    if (!hasRunsRoot) {
+      setRuns([]);
+      setRunsReady(true);
+      return;
+    }
+    try {
+      const items = await listRuns();
+      setRuns(Array.isArray(items) ? items : []);
+    } catch {
+      setRuns([]);
+    } finally {
+      setRunsReady(true);
+    }
+  }, [hasRunsRoot]);
+
+  const loadRunDetail = useCallback(
+    async (runId) => {
+      if (!runId || !hasRunsRoot) {
+        resetFromServer(null);
+        return;
+      }
+      setRunDetailLoading(true);
+      try {
+        const detail = await getRunDetail(runId);
+        resetFromServer(detail);
+        setCachedRunDetails((prev) => ({ ...prev, [runId]: detail }));
+      } catch {
+        resetFromServer(null);
+      } finally {
+        setRunDetailLoading(false);
+      }
+    },
+    [hasRunsRoot, resetFromServer],
+  );
+
+  useEffect(() => {
+    void loadRuns();
+  }, [loadRuns]);
+
+  useEffect(() => {
+    return onRunsUpdated(() => {
+      if (isDirtyRef.current) return;
+      void loadRuns();
+      if (selectedRunId) {
+        void loadRunDetail(selectedRunId);
+      }
+    });
+  }, [loadRuns, loadRunDetail, selectedRunId]);
+
+  useEffect(() => {
+    return onCasesUpdated(() => {
+      if (selectedCasePath) {
+        getCaseDetail(selectedCasePath, ACTIVE_REPO)
+          .then(setCaseDetail)
+          .catch(() => {});
+      }
+      if (selectedRunId && !isDirtyRef.current) {
+        void loadRunDetail(selectedRunId);
+      }
+    });
+  }, [selectedCasePath, selectedRunId, loadRunDetail]);
+
+  useEffect(() => {
+    if (!selectedRunId) {
+      resetFromServer(null);
+      setSelectedCasePath(null);
+      return;
+    }
+    void loadRunDetail(selectedRunId);
+    setSelectedCasePath(null);
+    setCaseListPage(1);
+  }, [selectedRunId, loadRunDetail, resetFromServer]);
+
+  useEffect(() => {
+    if (!selectedCasePath) {
+      setCaseDetail(null);
+      return;
+    }
+    let cancelled = false;
+    setCaseDetailLoading(true);
+    getCaseDetail(selectedCasePath, ACTIVE_REPO)
+      .then((detail) => {
+        if (!cancelled) setCaseDetail(detail);
+      })
+      .catch(() => {
+        if (!cancelled) setCaseDetail(null);
+      })
+      .finally(() => {
+        if (!cancelled) setCaseDetailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCasePath]);
+
+  useEffect(() => {
+    if (!runContextMenu) return;
+    const close = () => setRunContextMenu(null);
+    window.addEventListener("click", close);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+    };
+  }, [runContextMenu]);
+
+  const runCases = useMemo(() => displayDetail?.cases ?? [], [displayDetail]);
+
+  const displayRuns = useMemo(() => {
+    if (!isDirty || !selectedRunId || !displayDetail?.cases) {
+      return runs;
+    }
+    const counts = countResultsFromCases(displayDetail.cases);
+    return runs.map((r) =>
+      r.run_id === selectedRunId
+        ? {
+            ...r,
+            case_count: displayDetail.cases.length,
+            ...counts,
+          }
+        : r,
+    );
+  }, [runs, isDirty, selectedRunId, displayDetail]);
+
+  const runDetailsByRunId = useMemo(
+    () => ({
+      ...cachedRunDetails,
+      ...(selectedRunId && displayDetail ? { [selectedRunId]: displayDetail } : {}),
+    }),
+    [cachedRunDetails, selectedRunId, displayDetail],
+  );
+
+  const unifiedRunTree = useMemo(
+    () => buildUnifiedRunTree(displayRuns, runDetailsByRunId),
+    [displayRuns, runDetailsByRunId],
+  );
+
+  const [openedRunPath, setOpenedRunPath] = useState(null);
+
+  const focusedRunTree = useMemo(
+    () => filterTreeToOpenedRoot(unifiedRunTree, openedRunPath),
+    [unifiedRunTree, openedRunPath],
+  );
+
+  const {
+    selectedFolderPath,
+    expanded: folderExpanded,
+    setExpanded: setFolderExpanded,
+    handleSelectBrowseFolder,
+  } = useRunBrowseState({
+    tree: unifiedRunTree,
+    selectedRunId,
+    selectedCaseFilePath: selectedCasePath,
+    enabled: displayRuns.length > 0,
+  });
+
+  useEffect(() => {
+    if (!openedRunPath || !(unifiedRunTree || []).length) return;
+    if (!(unifiedRunTree || []).some((n) => n.directory_path === openedRunPath)) {
+      setOpenedRunPath(null);
+    }
+  }, [openedRunPath, unifiedRunTree]);
+
+  const handleOpenRun = useCallback(
+    (runPath) => {
+      if (!runPath) return;
+      const node = (unifiedRunTree || []).find((n) => n.directory_path === runPath);
+      if (!node?.is_run) return;
+      setOpenedRunPath(runPath);
+      handleSelectBrowseFolder(runPath);
+      const pathKey = collectPathKeyForFolderPath(unifiedRunTree, runPath) || node.name;
+      if (pathKey) {
+        setFolderExpanded((prev) => new Set([...prev, pathKey]));
+      }
+      const parsed = parseRunTreePath(runPath);
+      if (parsed?.runId) setSelectedRunId(parsed.runId);
+    },
+    [unifiedRunTree, handleSelectBrowseFolder, setFolderExpanded],
+  );
+
+  const handleCloseOpenedRun = useCallback(() => {
+    const pathKey = openedRunPath
+      ? collectPathKeyForFolderPath(unifiedRunTree, openedRunPath)
+      : null;
+    setOpenedRunPath(null);
+    if (pathKey) {
+      setFolderExpanded((prev) => {
+        if (!prev.has(pathKey)) return prev;
+        const next = new Set(prev);
+        next.delete(pathKey);
+        return next;
+      });
+    }
+  }, [openedRunPath, unifiedRunTree, setFolderExpanded]);
+
+  useEffect(() => {
+    setCaseListPage(1);
+  }, [selectedFolderPath]);
+
+  useEffect(() => {
+    if (!selectedFolderPath) return;
+    const parsed = parseRunTreePath(selectedFolderPath);
+    if (!parsed?.runId || parsed.runId === selectedRunId) return;
+    setSelectedRunId(parsed.runId);
+  }, [selectedFolderPath, selectedRunId]);
+
+  const folderScopedListEntries = useMemo(() => {
+    if (!selectedFolderPath) return null;
+    return buildGroupedRunCaseListEntries(runCases, unifiedRunTree, selectedFolderPath);
+  }, [selectedFolderPath, runCases, unifiedRunTree]);
+
+  const folderLabel = findRunFolderDisplayName(unifiedRunTree, selectedFolderPath);
+
+  const guardUnsaved = useCallback((continueAction) => {
+    if (!isDirtyRef.current) {
+      continueAction();
+      return;
+    }
+    setUnsavedDialog({ continueAction });
+  }, []);
+
+  useEffect(() => {
+    if (!registerLeaveHandler) return undefined;
+    registerLeaveHandler((proceed) => {
+      guardUnsaved(proceed);
+    });
+    return () => registerLeaveHandler(null);
+  }, [registerLeaveHandler, guardUnsaved]);
+
+  const handleUnsavedSave = useCallback(async () => {
+    const action = unsavedDialog?.continueAction;
+    try {
+      await save();
+      setUnsavedDialog(null);
+      await loadRuns();
+      action?.();
+    } catch {
+      // saveError shown in column 2 header
+    }
+  }, [unsavedDialog, save, loadRuns]);
+
+  const handleUnsavedDiscard = useCallback(() => {
+    const action = unsavedDialog?.continueAction;
+    discard();
+    setUnsavedDialog(null);
+    action?.();
+  }, [unsavedDialog, discard]);
+
+  const handleUnsavedCancel = useCallback(() => {
+    setUnsavedDialog(null);
+  }, []);
+
+  const handleSelectBrowseFolderWithRun = useCallback(
+    (path) => {
+      if (!path) return;
+      const parsed = parseRunTreePath(path);
+      if (!parsed?.runId) return;
+
+      const applySelection = () => {
+        handleSelectBrowseFolder(path);
+        if (parsed.runId !== selectedRunId) {
+          setSelectedRunId(parsed.runId);
+          setSelectedCasePath(null);
+        } else if (parsed.isRunRoot) {
+          setSelectedCasePath(null);
+        }
+        setCaseListPage(1);
+      };
+
+      if (parsed.runId !== selectedRunId) {
+        guardUnsaved(applySelection);
+      } else {
+        applySelection();
+      }
+    },
+    [handleSelectBrowseFolder, selectedRunId, guardUnsaved],
+  );
+
+  const handleCommitCreateRun = useCallback(
+    async (name) => {
+      if (!name?.trim()) {
+        setCreatingRun(false);
+        return;
+      }
+      const sanitized = sanitizeNameForPath(name);
+      if (!sanitized) {
+        setCreatingRun(false);
+        await confirm({
+          title: "Could not create run",
+          description:
+            "Invalid run name. Use only letters, numbers, underscores, and hyphens.",
+          confirmLabel: "OK",
+          variant: "danger",
+        });
+        return;
+      }
+      const title = displayNameFromSanitized(sanitized);
+      try {
+        if (!hasRunsRoot) {
+          await initializeRunsRoot();
+          onRunsRootInitialized?.();
+        }
+        const detail = await createRun(sanitized, title);
+        await loadRuns();
+        setCreatingRun(false);
+        setSelectedRunId(detail.run_id);
+      } catch (err) {
+        setCreatingRun(false);
+        await confirm({
+          title: "Could not create run",
+          description: err?.message || "Failed to create run",
+          confirmLabel: "OK",
+          variant: "danger",
+        });
+      }
+    },
+    [confirm, hasRunsRoot, loadRuns, onRunsRootInitialized],
+  );
+
+  const handleDeleteRun = useCallback(
+    (runId) => {
+      const performDelete = async () => {
+        const run = runs.find((r) => r.run_id === runId);
+        const label = run?.title?.trim() || runId;
+        const ok = await confirm({
+          title: "Delete test run?",
+          description: `Permanently delete "${label}"? This cannot be undone.`,
+          confirmLabel: "Delete",
+          variant: "danger",
+        });
+        if (!ok) return;
+
+        await deleteRun(runId);
+        if (selectedRunId === runId) {
+          setSelectedRunId(null);
+        }
+        setCachedRunDetails((prev) => {
+          if (!prev[runId]) return prev;
+          const next = { ...prev };
+          delete next[runId];
+          return next;
+        });
+        await loadRuns();
+      };
+      if (runId === selectedRunId && isDirtyRef.current) {
+        guardUnsaved(() => {
+          void performDelete();
+        });
+        return;
+      }
+      void performDelete();
+    },
+    [confirm, guardUnsaved, loadRuns, runs, selectedRunId],
+  );
+
+  const handleSetResult = useCallback(
+    (_runId, filePath, result) => {
+      setResult(filePath, result);
+    },
+    [setResult],
+  );
+
+  const handleSave = useCallback(async () => {
+    try {
+      await save();
+      await loadRuns();
+    } catch {
+      // saveError shown in header
+    }
+  }, [save, loadRuns]);
+
+  const closeAddCasesPicker = useCallback(() => {
+    setAddCasesRunId(null);
+    setAddCasesRunName(null);
+  }, []);
+
+  const handleAddCases = useCallback(
+    async (paths) => {
+      const runId = addCasesRunId ?? selectedRunId;
+      if (!runId) return;
+      const detail = await addRunCases(runId, paths);
+      if (runId === selectedRunId) {
+        resetFromServer(detail);
+      }
+      setCachedRunDetails((prev) => ({ ...prev, [runId]: detail }));
+      closeAddCasesPicker();
+      await loadRuns();
+    },
+    [addCasesRunId, selectedRunId, resetFromServer, loadRuns, closeAddCasesPicker],
+  );
+
+  const openAddCasesPicker = useCallback(
+    (runId, runName) => {
+      if (!runId || !hasCasesRoot) return;
+      guardUnsaved(() => {
+        setSelectedRunId(runId);
+        setAddCasesRunId(runId);
+        setAddCasesRunName(runName ?? null);
+      });
+    },
+    [guardUnsaved, hasCasesRoot],
+  );
+
+  const handleRemoveCase = useCallback(
+    (row) => {
+      const performRemove = async () => {
+        if (!selectedRunId || !row?.file_path) return;
+        const detail = await removeRunCase(selectedRunId, row.file_path);
+        resetFromServer(detail);
+        setCachedRunDetails((prev) => ({ ...prev, [selectedRunId]: detail }));
+        if (selectedCasePath === row.file_path) {
+          setSelectedCasePath(null);
+        }
+        await loadRuns();
+      };
+      guardUnsaved(() => {
+        void performRemove();
+      });
+    },
+    [selectedRunId, selectedCasePath, resetFromServer, loadRuns, guardUnsaved],
+  );
+
+  const getContextMenuItems = useCallback(
+    (row, closeMenu) => [
+      {
+        label: "Remove from run",
+        onClick: () => {
+          closeMenu(null);
+          handleRemoveCase(row);
+        },
+      },
+    ],
+    [handleRemoveCase],
+  );
+
+  const selectedRun = displayRuns.find((r) => r.run_id === selectedRunId);
+  const listTitle = folderLabel ?? selectedRun?.title ?? selectedRun?.run_id ?? null;
+
+  if (addCasesRunId) {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <AddCasesToRunPage
+          runId={addCasesRunId}
+          runName={addCasesRunName}
+          onDone={handleAddCases}
+          onCancel={closeAddCasesPicker}
+        />
+        <UnsavedChangesDialog
+          open={Boolean(unsavedDialog)}
+          saving={saving}
+          onSave={() => void handleUnsavedSave()}
+          onDiscard={handleUnsavedDiscard}
+          onCancel={handleUnsavedCancel}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <TestRepositoryThreeColumnLayout
+        storageKeys={{
+          treeWidth: "testRun.col.treeWidth",
+          listWidth: "testRun.col.listWidth",
+        }}
+        treeColumn={
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="shrink-0 border-b border-slate-200 px-2 py-2 dark:border-slate-700">
+              <SidebarSection
+                title="Run"
+                toolbar={
+                  <TreeToolbar
+                    addButton={
+                      <TitleBarAddButton
+                        tooltip="New run"
+                        onClick={() => setCreatingRun(true)}
+                        ariaLabel="New run"
+                      />
+                    }
+                    searchNode={null}
+                  />
+                }
+              />
+            </div>
+            <RepositoryFolderTree
+              tree={focusedRunTree}
+              projectsReady={runsReady}
+              selectedFolderPath={selectedFolderPath}
+              onSelectFolder={handleSelectBrowseFolderWithRun}
+              expanded={folderExpanded}
+              onExpandedChange={setFolderExpanded}
+              creatingRun={creatingRun}
+              onCommitCreateRun={handleCommitCreateRun}
+              emptyMessage="No test runs yet"
+              onContextMenuRun={(node, e) => {
+                if (!node?.run_id) return;
+                e.preventDefault();
+                setRunContextMenu({ x: e.clientX, y: e.clientY, runId: node.run_id });
+              }}
+              editorLocked
+              openedRunPath={openedRunPath}
+              onOpenRun={handleOpenRun}
+              onCloseOpenedRun={handleCloseOpenedRun}
+            />
+          </div>
+        }
+        caseListColumn={
+          <div className="flex h-full min-h-0 flex-col overflow-hidden">
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-2 py-2 dark:border-slate-700">
+              <div className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                  {listTitle || "Cases"}
+                </span>
+                {isDirty ? (
+                  <span className="text-xs text-amber-600 dark:text-amber-400">Unsaved changes</span>
+                ) : null}
+                {saveError ? (
+                  <span className="block truncate text-xs text-red-600 dark:text-red-400">{saveError}</span>
+                ) : null}
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  disabled={!isDirty || saving || !selectedRunId}
+                  title="Save test results"
+                  onClick={() => void handleSave()}
+                  className="inline-flex items-center gap-1 rounded-ui border border-transparent px-2 py-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50 enabled:bg-[color:var(--vscode-button-background)] enabled:text-[color:var(--vscode-button-foreground)] enabled:hover:bg-[color:var(--vscode-button-hoverBackground)] disabled:border-[color:var(--vscode-panel-border,var(--vscode-input-border))] disabled:text-[color:var(--vscode-disabledForeground)]"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  {saving ? "Saving…" : "Save"}
+                </button>
+              </div>
+            </div>
+            <RunPaginatedCaseList
+              cases={[]}
+              listEntries={folderScopedListEntries}
+              page={caseListPage}
+              onPageChange={setCaseListPage}
+              selectedCaseFilePath={selectedCasePath}
+              onSelectCase={(row) => setSelectedCasePath(row?.file_path ?? null)}
+              folderPath={selectedFolderPath}
+              listTitle={listTitle}
+              showNoRunWhenEmpty
+              showNoFolderWhenEmpty
+              noRunMessage="Select a run"
+              noFolderMessage="Select a project or suite"
+              emptyMessage={
+                runDetailLoading
+                  ? "Loading…"
+                  : selectedFolderPath
+                    ? "No cases in this folder"
+                    : "No cases in this run. Right-click a run to add cases from the repository."
+              }
+              loading={runDetailLoading}
+              defaultRunId={selectedRunId}
+              onSetResult={handleSetResult}
+              getContextMenuItems={getContextMenuItems}
+            />
+          </div>
+        }
+        detailColumn={
+          <div className={`flex h-full min-h-0 flex-col overflow-hidden ${browseColumnNoSelect}`}>
+            {caseDetailLoading ? (
+              <DetailPanelLoading />
+            ) : caseDetail ? (
+              <CaseDetailView testCase={caseDetail} simpleMode reviewEnabled={false} />
+            ) : (
+              <DetailPanelEmpty
+                iconComponent={TestCaseIcon}
+                title={
+                  selectedCasePath
+                    ? "Case not found"
+                    : !displayRuns.length
+                      ? "Create a run to get started"
+                      : selectedRunId
+                        ? "Select a case"
+                        : "Select a run"
+                }
+                description={
+                  selectedCasePath
+                    ? "The case file may have been moved or deleted."
+                    : !displayRuns.length
+                      ? "Use + to create a run"
+                      : selectedRunId
+                        ? "Choose a case from the list to view its details."
+                        : "Select a run, then a case."
+                }
+              />
+            )}
+          </div>
+        }
+      />
+      {runContextMenu ? (
+        <ContextMenu
+          open
+          x={runContextMenu.x}
+          y={runContextMenu.y}
+          onClose={() => setRunContextMenu(null)}
+          items={[
+            {
+              label: "Add cases",
+              icon: Plus,
+              disabled: !hasCasesRoot,
+              title: !hasCasesRoot
+                ? "Create a test project before adding cases"
+                : undefined,
+              onClick: () => {
+                const run = displayRuns.find((r) => r.run_id === runContextMenu.runId);
+                openAddCasesPicker(
+                  runContextMenu.runId,
+                  run?.title ?? run?.run_id ?? null,
+                );
+                setRunContextMenu(null);
+              },
+            },
+            {
+              label: "Delete run",
+              icon: Trash2,
+              variant: "danger",
+              onClick: () => {
+                handleDeleteRun(runContextMenu.runId);
+                setRunContextMenu(null);
+              },
+            },
+          ]}
+        />
+      ) : null}
+      <UnsavedChangesDialog
+        open={Boolean(unsavedDialog)}
+        saving={saving}
+        onSave={() => void handleUnsavedSave()}
+        onDiscard={handleUnsavedDiscard}
+        onCancel={handleUnsavedCancel}
+      />
+    </div>
+  );
+}

@@ -1,0 +1,18 @@
+---
+title: Tree selection breaks when clicking a run under a collapsed folder
+type: bug
+status: open
+priority: medium
+release: Gitoza-lite/0-3-2
+---
+
+## Summary
+
+Selecting a run (or nested path) while a parent folder is collapsed leaves the Test Run tree out of sync.
+
+## Details
+
+- **Repro:** collapse a parent, then click a run/child under it.
+- **Expected:** selection and expand state stay consistent.
+- **Actual:** highlight, chevrons, and browse path get flaky.
+- Likely `expanded` / `selectedFolderPath` drift in the run browse tree.

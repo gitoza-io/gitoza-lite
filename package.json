@@ -1,0 +1,101 @@
+{
+  "name": "gitoza-yaml-test-cases",
+  "displayName": "Gitoza Lite — Task & Test Management in YAML",
+  "description": "Task and test management in YAML — tickets, wiki, releases, and YAML test cases in your repo. Local-first, AI-friendly files for VS Code, Cursor, Copilot & ChatGPT.",
+  "version": "0.3.0",
+  "publisher": "gitoza",
+  "license": "MIT",
+  "icon": "media/128x128.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gitoza-io/gitoza-yaml-test-cases.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Testing",
+    "Other"
+  ],
+  "keywords": [
+    "gitoza",
+    "gitoza lite",
+    "task management",
+    "test management",
+    "yaml test",
+    "yaml test cases",
+    "test case",
+    "tickets",
+    "wiki",
+    "releases",
+    "qa",
+    "manual testing",
+    "yaml",
+    "markdown",
+    "git",
+    "local-first",
+    "cursor",
+    "copilot"
+  ],
+  "galleryBanner": {
+    "color": "#1e1e2e",
+    "theme": "dark"
+  },
+  "activationEvents": [
+    "workspaceContains:.gitoza-lite/test/cases",
+    "workspaceContains:.gitoza-lite/tasks/tickets",
+    "workspaceContains:.gitoza-lite/wiki"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitoza.openTestRepository",
+        "title": "Open Tickets, Wiki & Tests",
+        "category": "Gitoza Lite",
+        "icon": "$(file-code)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gitoza",
+          "title": "Gitoza Lite",
+          "icon": "media/activitybar.png"
+        }
+      ]
+    },
+    "views": {
+      "gitoza": [
+        {
+          "id": "gitoza.launcher",
+          "name": "Gitoza Lite",
+          "type": "tree"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build:ext": "node esbuild.mjs",
+    "build:webview": "cd webview && npm run build",
+    "build": "npm run build:ext && npm run build:webview",
+    "watch:ext": "node esbuild.mjs --watch",
+    "watch:webview": "cd webview && npm run dev",
+    "watch": "npm run watch:ext & npm run watch:webview",
+    "test": "vitest run",
+    "test:ext": "vitest run --config vitest.config.ts",
+    "package": "npm run build && vsce package --no-dependencies",
+    "vscode:prepublish": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "yaml": "^2.6.1"
+  }
+}

@@ -1,0 +1,45 @@
+---
+title: Debounced auto-save persists ticket edits after idle
+status: active
+priority: medium
+tags: [auto-save, tickets]
+---
+
+## Description
+
+Verify ticket edits persist automatically ~2s after the last change without clicking Save (GITO-UBTLOD).
+
+## Page object
+
+- **Nav.Tickets** — sidebar Tickets icon
+- **Tickets.ProjectTree** — project / ticket tree
+- **Tickets.List** — ticket list for the selected project
+- **Tickets.Detail** — ticket editor
+- **Tickets.TitleField** — title input
+- **Tickets.BodyEditor** — Markdown body editor
+
+## Steps
+
+1. Click **Nav.Tickets**.
+2. In **Tickets.ProjectTree**, select project `Gitoza-lite`.
+3. Open an existing ticket from **Tickets.List** (or create one and open it in edit mode).
+4. In **Tickets.Detail**, change **Tickets.TitleField** to a unique marker (e.g. `AS-001 title`).
+5. Edit **Tickets.BodyEditor** with a unique marker (e.g. `AS-001 body`).
+6. Stop editing and wait ~2 seconds (debounce) — do not click Save.
+7. Leave the ticket (select another ticket or navigate away), then reopen the same ticket.
+
+## Expected results
+
+- No Save button is required for the edits to persist.
+- After reopen, title and body still show the unique markers.
+- Ticket YAML under `.gitoza-lite/tasks/tickets/Gitoza-lite/` contains the new title/body.
+
+## Actual results
+
+_(Record outcomes during execution.)_
+
+## Environment
+
+- VS Code / Cursor version:
+- Extension version / build:
+- OS:

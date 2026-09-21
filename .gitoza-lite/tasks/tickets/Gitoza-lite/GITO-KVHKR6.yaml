@@ -1,0 +1,18 @@
+---
+title: Webview UI zoom (wheel + zoom bar)
+type: task
+status: done
+priority: medium
+release: Gitoza-lite/0-3-1
+---
+
+## Summary
+
+Scale the Gitoza Lite panel without changing VS Code’s global zoom, without keyboard shortcuts that conflict on Mac.
+
+## Details
+
+- Drop keyboard `Ctrl`/`Cmd` ± and `0` (VS Code / Chromium conflicts).
+- Keep `Ctrl`/`Cmd` + mouse wheel for zoom.
+- Add a bottom-right zoom bar: `−` / percent (click resets) / `+`.
+- Scale via `--gitoza-ui-scale` (0.75–1.5, step 0.05); persist in `gitoza.webview.uiScale`.

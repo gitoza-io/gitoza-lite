@@ -1,0 +1,43 @@
+---
+title: Wiki, release, and run editors auto-save
+status: active
+priority: medium
+tags: [auto-save, wiki, release, run]
+---
+
+## Description
+
+Verify debounced auto-save works across the other GITO-UBTLOD editors: wiki page, release, and run summary.
+
+## Page object
+
+- **Nav.Wiki** — Wiki icon
+- **Wiki.Tree** — wiki tree
+- **Wiki.Detail** / **Wiki.BodyEditor** — page editor
+- **Nav.Releases** — Releases icon
+- **Releases.Tree** — project / release tree
+- **Releases.Detail** — release editor
+- **Nav.TestRun** — Test Run icon
+- **Run.Tree** — run list
+- **Run.Detail** — run summary (description / assignee)
+
+## Steps
+
+1. **Wiki:** Click **Nav.Wiki**, open a page in edit mode, change **Wiki.BodyEditor**, wait ~2s, leave and reopen — body persists.
+2. **Release:** Click **Nav.Releases**, open `Gitoza-lite` / `0.3.1` in edit mode, edit the release body, wait ~2s, leave and reopen — body persists.
+3. **Run:** Click **Nav.TestRun**, open a run in edit mode, change description (or assignee), wait ~2s, leave and reopen — field persists.
+
+## Expected results
+
+- Wiki, release, and run edits each survive leave/reopen without an explicit Save click.
+- No cross-entity content bleed when switching between pages/runs quickly after an edit.
+
+## Actual results
+
+_(Record outcomes during execution.)_
+
+## Environment
+
+- VS Code / Cursor version:
+- Extension version / build:
+- OS:

@@ -1,0 +1,551 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import TestRepository from "./TestRepository";
+import { useConfirm } from "../components/ConfirmProvider";
+import {
+  createFolder,
+  createProject,
+  createTestCase,
+  deleteCase,
+  deleteFolder,
+  deleteProject,
+  findRunsReferencingCases,
+  getCaseDetail,
+  getCaseFilters,
+  getCases,
+  renameFolder,
+  updateCase,
+  initializeCasesRoot,
+} from "../services/api";
+import { useLazyRepositoryTree } from "../hooks/useLazyRepositoryTree";
+import { onCasesUpdated } from "../api/vscodeApi";
+import { findFolderNode, isProjectDirectoryPath } from "../utils/caseTree";
+import {
+  collectParamsFromCases,
+  collectTagsFromCases,
+  mergeCaseFilterParams,
+  mergeCaseFilterTags,
+} from "../utils/caseFilters";
+import {
+  formatRunReferenceWarning,
+  pathUnderPrefix,
+  pathsFromCaseDeletePayload,
+} from "../utils/deleteConfirmCopy";
+import { remapPathUnderPrefix } from "../utils/patchRepositoryTree";
+import { displayNameFromSanitized, sanitizeNameForPath } from "../utils/sanitize";
+import {
+  getRenameConflictDisplayName,
+  RenameNameConflictError,
+} from "../utils/renameConflict";
+import { flushAllAutoSavesBeforeSync } from "../utils/autoSaveFlushRegistry";
+
+const ACTIVE_REPO = "vscode";
+
+export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialized }) {
+  const confirm = useConfirm();
+  const { repositoryTree, projectsReady, treeStructureLoadingPrefixes, loadData } =
+    useLazyRepositoryTree(ACTIVE_REPO);
+
+  const [selectedCaseFilePath, setSelectedCaseFilePath] = useState(null);
+  const [selectedFolderPath, setSelectedFolderPath] = useState(null);
+  const [caseDetail, setCaseDetail] = useState(null);
+  const [caseDetailLoading, setCaseDetailLoading] = useState(false);
+  const [isEditingCase, setIsEditingCase] = useState(false);
+  const [showCreateFormInPanel, setShowCreateFormInPanel] = useState(false);
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [filterOptions, setFilterOptions] = useState({});
+  const [activeSearchChips, setActiveSearchChips] = useState([]);
+  const caseListWindowRef = useRef(null);
+  const selectedCaseFilePathRef = useRef(null);
+  selectedCaseFilePathRef.current = selectedCaseFilePath;
+
+  const refreshFilterOptions = useCallback(async () => {
+    let opts = {};
+    try {
+      opts = (await getCaseFilters(ACTIVE_REPO)) || {};
+    } catch {
+      opts = {};
+    }
+    try {
+      const list = await getCases(ACTIVE_REPO, {});
+      const items = list?.items || [];
+      opts = mergeCaseFilterTags(opts, items);
+      opts = mergeCaseFilterParams(opts, items);
+      if (!(opts.tags?.length) && items.length) {
+        opts = { ...opts, tags: collectTagsFromCases(items) };
+      }
+      if (!(opts.param_keys?.length) && items.length) {
+        opts = { ...opts, ...collectParamsFromCases(items) };
+      }
+    } catch {
+      // keep API/stub filters
+    }
+    return opts;
+  }, []);
+
+  useEffect(() => {
+    if (!hasCasesRoot) return undefined;
+    let cancelled = false;
+    void refreshFilterOptions().then((opts) => {
+      if (!cancelled) setFilterOptions(opts);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hasCasesRoot, refreshFilterOptions]);
+
+  useEffect(() => {
+    return onCasesUpdated(() => {
+      void loadData();
+      void refreshFilterOptions().then(setFilterOptions);
+      caseListWindowRef.current?.invalidateAll?.();
+      const path = selectedCaseFilePathRef.current;
+      if (path) {
+        getCaseDetail(path, ACTIVE_REPO)
+          .then((detail) => {
+            if (selectedCaseFilePathRef.current === path) setCaseDetail(detail);
+          })
+          .catch(() => {});
+      }
+    });
+  }, [loadData, refreshFilterOptions]);
+
+  useEffect(() => {
+    if (!selectedCaseFilePath) {
+      setCaseDetail(null);
+      return;
+    }
+    const path = selectedCaseFilePath;
+    let cancelled = false;
+    setCaseDetailLoading(true);
+    getCaseDetail(path, ACTIVE_REPO)
+      .then((detail) => {
+        if (!cancelled && selectedCaseFilePathRef.current === path) {
+          setCaseDetail(detail);
+        }
+      })
+      .catch(() => {
+        if (!cancelled && selectedCaseFilePathRef.current === path) {
+          setCaseDetail(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled && selectedCaseFilePathRef.current === path) {
+          setCaseDetailLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCaseFilePath]);
+
+  const effectiveProjectDir = useMemo(() => {
+    if (!selectedFolderPath) return null;
+    if (isProjectDirectoryPath(selectedFolderPath)) return selectedFolderPath;
+    const node = findFolderNode(repositoryTree, selectedFolderPath);
+    if (!node) return selectedFolderPath;
+    let path = selectedFolderPath;
+    while (path && !isProjectDirectoryPath(path)) {
+      const parent = path.replace(/\/[^/]+$/, "");
+      if (!parent || parent === path) break;
+      path = parent;
+    }
+    return isProjectDirectoryPath(path) ? path : selectedFolderPath;
+  }, [selectedFolderPath, repositoryTree]);
+
+  const handleSelectCase = useCallback((row) => {
+    setShowCreateFormInPanel(false);
+    setSelectedCaseFilePath(row?.file_path ?? null);
+  }, []);
+
+  const handleSelectBrowseFolder = useCallback((path) => {
+    void flushAllAutoSavesBeforeSync();
+    setSelectedFolderPath(path);
+    setSelectedCaseFilePath(null);
+    setIsEditingCase(false);
+    setShowCreateFormInPanel(false);
+  }, []);
+
+  const handleToggleEdit = useCallback((editing) => {
+    setIsEditingCase(Boolean(editing));
+  }, []);
+
+  const handleSaveCase = useCallback(async (payload) => {
+    const filePath = payload.file_path;
+    if (!filePath) return;
+    await updateCase(
+      filePath,
+      {
+        title: payload.title,
+        priority: payload.priority,
+        tags: payload.tags,
+        body: payload.body,
+        requirement_id: payload.requirement_id,
+        assigned_to: payload.assigned_to,
+        automated: payload.automated,
+        params: payload.params,
+      },
+      ACTIVE_REPO,
+    );
+    if (selectedCaseFilePathRef.current === filePath) {
+      const detail = await getCaseDetail(filePath, ACTIVE_REPO);
+      setCaseDetail(detail);
+    }
+  }, []);
+
+  const handleCreateCase = useCallback(
+    async (payload) => {
+      const res = await createTestCase(
+        {
+          ...payload,
+          directory: payload.directory || effectiveProjectDir,
+        },
+        ACTIVE_REPO,
+      );
+      await loadData();
+      if (res?.file_path) {
+        setSelectedCaseFilePath(res.file_path);
+        setShowCreateFormInPanel(false);
+        setIsEditingCase(false);
+      }
+    },
+    [effectiveProjectDir, loadData],
+  );
+
+  const handleCreateProject = useCallback(
+    async (name) => {
+      const sanitized = sanitizeNameForPath(name);
+      if (!sanitized) {
+        throw new Error(
+          "Invalid project name. Use only letters, numbers, underscores, and hyphens.",
+        );
+      }
+      await createProject(sanitized, ACTIVE_REPO);
+      await loadData();
+      setCreatingProject(false);
+      if (!hasCasesRoot) {
+        onCasesRootInitialized?.();
+      }
+    },
+    [hasCasesRoot, loadData, onCasesRootInitialized],
+  );
+
+  const handleCommitInlineProject = useCallback(
+    async (name) => {
+      if (!name?.trim()) {
+        setCreatingProject(false);
+        return;
+      }
+      const sanitized = sanitizeNameForPath(name);
+      if (!sanitized) {
+        setCreatingProject(false);
+        await confirm({
+          title: "Could not create project",
+          description:
+            "Invalid project name. Use only letters, numbers, underscores, and hyphens.",
+          confirmLabel: "OK",
+          variant: "danger",
+        });
+        return;
+      }
+      try {
+        if (!hasCasesRoot) {
+          await initializeCasesRoot();
+          onCasesRootInitialized?.();
+        }
+        await handleCreateProject(sanitized);
+      } catch (err) {
+        setCreatingProject(false);
+        await confirm({
+          title: "Could not create project",
+          description: err?.message || "Failed to create project",
+          confirmLabel: "OK",
+          variant: "danger",
+        });
+      }
+    },
+    [confirm, handleCreateProject, hasCasesRoot, onCasesRootInitialized],
+  );
+
+  const handleCreateFolder = useCallback(
+    async (parentPath, folderName) => {
+      const sanitized = sanitizeNameForPath(folderName);
+      if (!sanitized) {
+        await confirm({
+          title: "Could not create suite",
+          description: "Invalid folder name.",
+          confirmLabel: "OK",
+          variant: "danger",
+        });
+        return;
+      }
+      try {
+        await createFolder(parentPath, sanitized, ACTIVE_REPO);
+        await loadData();
+      } catch (err) {
+        await confirm({
+          title: "Could not create suite",
+          description: err?.message || "Failed to create folder",
+          confirmLabel: "OK",
+          variant: "danger",
+        });
+      }
+    },
+    [confirm, loadData],
+  );
+
+  const handleRenameFolder = useCallback(
+    async (folderPath, newName) => {
+      const sanitized = sanitizeNameForPath(newName);
+      if (!sanitized) {
+        throw new Error(
+          "Invalid folder name. Use only letters, numbers, underscores, and hyphens.",
+        );
+      }
+      try {
+        const result = await renameFolder(folderPath, sanitized);
+        const oldPath = result?.old_path ?? folderPath;
+        const newPath = result?.new_path;
+        if (newPath && oldPath !== newPath) {
+          setSelectedFolderPath((prev) =>
+            prev ? remapPathUnderPrefix(prev, oldPath, newPath) : prev,
+          );
+          setSelectedCaseFilePath((prev) =>
+            prev ? remapPathUnderPrefix(prev, oldPath, newPath) : prev,
+          );
+        }
+        await loadData();
+        caseListWindowRef.current?.invalidateAll?.();
+        return result;
+      } catch (err) {
+        const msg = err?.message || "";
+        if (/already exists/i.test(msg)) {
+          throw new RenameNameConflictError(
+            getRenameConflictDisplayName({
+              kind: "folder",
+              newName: displayNameFromSanitized(sanitized),
+            }),
+          );
+        }
+        throw err;
+      }
+    },
+    [loadData],
+  );
+
+  const handleCommitInlineCase = useCallback(
+    async (path, _isProject, caseId) => {
+      await createTestCase(
+        {
+          directory: isProjectDirectoryPath(path) ? path : effectiveProjectDir,
+          target_folder: isProjectDirectoryPath(path) ? undefined : path,
+          case_id: caseId,
+          title: caseId,
+        },
+        ACTIVE_REPO,
+      );
+      await loadData();
+    },
+    [effectiveProjectDir, loadData],
+  );
+
+  const clearSelectionUnderPath = useCallback((deletedPath) => {
+    if (selectedCaseFilePath && pathUnderPrefix(selectedCaseFilePath, deletedPath)) {
+      setSelectedCaseFilePath(null);
+      setCaseDetail(null);
+      setIsEditingCase(false);
+    }
+    if (selectedFolderPath && pathUnderPrefix(selectedFolderPath, deletedPath)) {
+      setSelectedFolderPath(null);
+    }
+  }, [selectedCaseFilePath, selectedFolderPath]);
+
+  const appendRunWarning = useCallback(async (paths, description) => {
+    try {
+      const refs = await findRunsReferencingCases(paths);
+      const warning = formatRunReferenceWarning(refs);
+      if (!warning) return description;
+      return description ? `${description}\n\n${warning}` : warning;
+    } catch {
+      return description;
+    }
+  }, []);
+
+  const handleDeleteCase = useCallback(
+    async (payload) => {
+      const paths = pathsFromCaseDeletePayload(payload);
+      if (!paths.length) return;
+
+      const rows = payload.rows ?? (payload.row ? [payload.row] : []);
+      const count = paths.length;
+      const firstLabel =
+        rows[0]?.title?.trim() || rows[0]?.case_id || paths[0].split("/").pop()?.replace(/\.ya?ml$/i, "");
+
+      let description =
+        count === 1
+          ? `Permanently delete "${firstLabel}"? This cannot be undone.`
+          : `Permanently delete ${count} test cases? This cannot be undone.`;
+
+      if (
+        isEditingCase &&
+        selectedCaseFilePath &&
+        paths.some((p) => p === selectedCaseFilePath)
+      ) {
+        description = `You have unsaved changes on this case.\n\n${description}`;
+      }
+
+      description = await appendRunWarning(paths, description);
+
+      const ok = await confirm({
+        title: count === 1 ? "Delete test case?" : `Delete ${count} test cases?`,
+        description,
+        confirmLabel: "Delete",
+        variant: "danger",
+      });
+      if (!ok) return;
+
+      await deleteCase(paths);
+      for (const p of paths) {
+        clearSelectionUnderPath(p);
+      }
+      await loadData();
+      caseListWindowRef.current?.invalidateAll?.();
+    },
+    [
+      appendRunWarning,
+      clearSelectionUnderPath,
+      confirm,
+      isEditingCase,
+      loadData,
+      selectedCaseFilePath,
+    ],
+  );
+
+  const handleDeleteFolder = useCallback(
+    async (folderPath) => {
+      if (!folderPath) return;
+      const node = findFolderNode(repositoryTree, folderPath);
+      const label = node?.display_name ?? node?.name ?? folderPath.split("/").pop();
+      const caseCount = node?.case_count ?? 0;
+
+      let description = `Permanently delete suite "${label}"`;
+      if (caseCount > 0) {
+        description += ` and ${caseCount} test case${caseCount === 1 ? "" : "s"}`;
+      }
+      description += "? This cannot be undone.";
+      description = await appendRunWarning([folderPath], description);
+
+      const ok = await confirm({
+        title: "Delete test suite?",
+        description,
+        confirmLabel: "Delete",
+        variant: "danger",
+      });
+      if (!ok) return;
+
+      await deleteFolder(folderPath);
+      clearSelectionUnderPath(folderPath);
+      await loadData();
+      caseListWindowRef.current?.invalidateAll?.();
+    },
+    [appendRunWarning, clearSelectionUnderPath, confirm, loadData, repositoryTree],
+  );
+
+  const handleDeleteProject = useCallback(
+    async (node) => {
+      const projectPath = node?.directory_path;
+      if (!projectPath) return;
+      const label = node.display_name ?? node.name ?? projectPath.split("/").pop();
+      const caseCount = node.case_count ?? 0;
+      const suiteCount = node.children?.length ?? 0;
+
+      let description = `Permanently delete project "${label}"`;
+      if (caseCount > 0 || suiteCount > 0) {
+        const parts = [];
+        if (caseCount > 0) {
+          parts.push(`${caseCount} test case${caseCount === 1 ? "" : "s"}`);
+        }
+        if (suiteCount > 0) {
+          parts.push(`${suiteCount} suite${suiteCount === 1 ? "" : "s"}`);
+        }
+        description += ` and ${parts.join(" in ")}`;
+      }
+      description += "? This cannot be undone.";
+      description = await appendRunWarning([projectPath], description);
+
+      const ok = await confirm({
+        title: "Delete project?",
+        description,
+        confirmLabel: "Delete",
+        variant: "danger",
+      });
+      if (!ok) return;
+
+      await deleteProject(projectPath);
+      clearSelectionUnderPath(projectPath);
+      await loadData();
+      caseListWindowRef.current?.invalidateAll?.();
+    },
+    [appendRunWarning, clearSelectionUnderPath, confirm, loadData],
+  );
+
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <TestRepository
+        vscodeMode
+        tree={repositoryTree}
+        projectsReady={projectsReady}
+        treeStructureLoadingPrefixes={treeStructureLoadingPrefixes}
+        selectedCaseFilePath={selectedCaseFilePath}
+        selectedFolderPath={selectedFolderPath}
+        onSelectBrowseFolder={handleSelectBrowseFolder}
+        caseDetail={caseDetail}
+        caseDetailLoading={caseDetailLoading}
+        isEditingCase={isEditingCase}
+        onSelectCase={handleSelectCase}
+        onClearSelection={() => {
+          void flushAllAutoSavesBeforeSync().then(() => {
+            setSelectedCaseFilePath(null);
+            setIsEditingCase(false);
+          });
+        }}
+        onToggleEdit={handleToggleEdit}
+        onSaveCase={handleSaveCase}
+        showCreateFormInPanel={showCreateFormInPanel}
+        onStartCreate={() => {
+          void flushAllAutoSavesBeforeSync().then(() => {
+            setIsEditingCase(false);
+            setShowCreateFormInPanel(true);
+          });
+        }}
+        onCancelCreate={() => setShowCreateFormInPanel(false)}
+        onCreateCase={handleCreateCase}
+        onCommitInlineCase={handleCommitInlineCase}
+        effectiveProjectDir={effectiveProjectDir}
+        contextTargetFolder={selectedFolderPath}
+        onContextCreateTestCase={() => {
+          void flushAllAutoSavesBeforeSync().then(() => {
+            setIsEditingCase(false);
+            setShowCreateFormInPanel(true);
+          });
+        }}
+        onCreateFolder={handleCreateFolder}
+        onRenameFolder={handleRenameFolder}
+        onOpenCreateProject={() => setCreatingProject(true)}
+        creatingProject={creatingProject}
+        onCommitInlineProject={handleCommitInlineProject}
+        activeRepoSlug={ACTIVE_REPO}
+        reviewEnabled={false}
+        filterOptions={filterOptions}
+        activeSearchChips={activeSearchChips}
+        onSearchCases={setActiveSearchChips}
+        priorityFilter="all"
+        onRegisterCaseListWindow={(api) => {
+          caseListWindowRef.current = api;
+        }}
+        onDeleteCase={handleDeleteCase}
+        onDeleteFolder={handleDeleteFolder}
+        onDeleteProject={handleDeleteProject}
+      />
+    </div>
+  );
+}

@@ -1,0 +1,45 @@
+---
+title: Create and edit a ticket
+status: active
+priority: medium
+tags: [smoke, tickets]
+---
+
+## Description
+
+Verify the Tickets view can open a project, create or select a ticket, edit fields, and persist changes.
+
+## Page object
+
+- **Nav.Tickets** — sidebar Tickets icon
+- **Tickets.ProjectTree** — project / ticket tree
+- **Tickets.List** — ticket list for the selected project
+- **Tickets.Detail** — ticket editor (title, type, status, priority, release, body)
+- **Tickets.TitleField** — title input in the detail pane
+- **Tickets.StatusField** — status control in the detail pane
+- **Tickets.SaveControl** — save action (button or auto-save indicator)
+
+## Steps
+
+1. Click **Nav.Tickets**.
+2. In **Tickets.ProjectTree**, select project `Gitoza-lite` (or create it if missing).
+3. Create a new ticket or open an existing one from **Tickets.List**.
+4. In **Tickets.Detail**, change **Tickets.TitleField** and **Tickets.StatusField**.
+5. Persist via **Tickets.SaveControl** (or wait for auto-save if enabled).
+6. Leave and reopen the same ticket.
+
+## Expected results
+
+- Ticket detail loads without error.
+- Title and status changes are still present after reopen.
+- Ticket file exists under `.gitoza-lite/tasks/tickets/Gitoza-lite/`.
+
+## Actual results
+
+_(Record outcomes during execution.)_
+
+## Environment
+
+- VS Code / Cursor version:
+- Extension version / build:
+- OS:
