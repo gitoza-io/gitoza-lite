@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-22
+
 ### Added
 
 - **Copy ticket path** — button next to the ticket ID copies the repo-relative YAML path
+- README **Tickets** and **AI-generated tickets** demo videos (muted, compressed)
+
+### Changed
+
+- README intro focuses on repo-native tasks/tests and git collaboration; About section clarifies Lite vs Desktop on the same YAML
 
 ## [0.3.1] - 2026-09-21
 
