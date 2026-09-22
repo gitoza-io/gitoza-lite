@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-21
+
+### Added
+
+- **Debounced auto-save** (≈2s) for tickets, wiki, releases, test cases, and run editors — Save button removed; View flushes pending changes
+- **Webview UI zoom** — `Ctrl`/`Cmd` + mouse wheel and a bottom-right zoom bar (`−` / percent / `+`); scale persists in `gitoza.webview.uiScale`
+- **Open-focus navigation** — double-click a project, release, or run to focus that branch; back chevron steps out one level (Tickets, Releases, Test Repository, Test Run)
+- **Pin ticket projects** — hover pin on project rows; pinned projects stay at the top (shared by Tickets and Releases)
+- **Query search with frontmatter chips** — type `status: open` (Tab autocompletes keys/values); free text becomes a `q` chip (Tickets, Releases, Wiki, Test Repository)
+- **Quick filters** — Tickets project focus: Open / Blocked / Backlog; Releases: release-status then ticket-status filters when focused
+- **Create ticket from a release** — right-click a release → Create ticket with `release` pre-filled
+- **Add cases to a run** — right-click a run to pick cases with preview before confirming
+
+### Fixed
+
+- Case search **priority** value dropdown (High / Medium / Low) after selecting the priority key
+- Custom fields searchable as their own frontmatter keys (not a synthetic “Custom field” key)
+- Dark-mode / theme contrast for icons and UI chrome
+
+### Changed
+
+- Switching between tickets (or cases, wiki pages, releases of the same type) while editing keeps edit mode and flushes the previous draft safely
+
 ## [0.3.0] - 2026-09-17
 
 ### Added
@@ -73,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Activity Bar launcher and **Gitoza: Open Test Repository** command
 - Pending run-result updates with unsaved-changes prompt before save
 
+[0.3.1]: https://github.com/gitoza-io/gitoza-yaml-test-cases/releases/tag/v0.3.1
 [0.3.0]: https://github.com/gitoza-io/gitoza-yaml-test-cases/releases/tag/v0.3.0
 [0.2.1]: https://github.com/gitoza-io/gitoza-yaml-test-cases/releases/tag/v0.2.1
 [0.2.0]: https://github.com/gitoza-io/gitoza-yaml-test-cases/releases/tag/v0.2.0
