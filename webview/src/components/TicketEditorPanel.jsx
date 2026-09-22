@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eye, Pencil, Ticket } from "lucide-react";
+import { Check, ClipboardCopy, Eye, Pencil, Ticket } from "lucide-react";
 import { CustomFieldsEditStrip } from "./CaseCustomFields";
 import DetailPanel from "./DetailPanel";
 import DetailPanelEmpty from "./DetailPanelEmpty";
@@ -19,7 +19,39 @@ import { useDebouncedAutoSave } from "../hooks/useDebouncedAutoSave";
 import { useMarkdownEditor } from "../hooks/useMarkdownEditor";
 import { listReleases, onTicketsUpdated } from "../services/api";
 import { registerAutoSaveFlush } from "../utils/autoSaveFlushRegistry";
+import { copyToClipboard } from "../utils/copyToClipboard.js";
 import TagsInput from "./TagsInput";
+
+function CopyTicketPathButton({ filePath }) {
+  const [copied, setCopied] = useState(false);
+
+  const onCopy = useCallback(async () => {
+    if (!filePath) return;
+    const ok = await copyToClipboard(filePath);
+    if (ok) {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    }
+  }, [filePath]);
+
+  return (
+    <Tooltip label={copied ? "Copied" : "Copy path"} placement="bottom">
+      <button
+        type="button"
+        onClick={() => void onCopy()}
+        disabled={!filePath}
+        className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-40 dark:hover:bg-slate-800"
+        aria-label={copied ? "Copied" : "Copy path"}
+      >
+        {copied ? (
+          <Check className="h-4 w-4 text-emerald-600" aria-hidden />
+        ) : (
+          <ClipboardCopy className="h-4 w-4" aria-hidden />
+        )}
+      </button>
+    </Tooltip>
+  );
+}
 
 const inlineCls =
   "bg-transparent border-0 border-b border-transparent outline-none transition-colors focus:border-indigo-400 dark:focus:border-indigo-500";
@@ -349,16 +381,19 @@ function TicketEditorPanel({
         <TicketDetailView
           ticket={ticketDetail}
           ticketIdRowExtra={
-            <Tooltip label="Edit" placement="bottom-end">
-              <button
-                type="button"
-                onClick={() => onToggleEdit?.(true)}
-                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
-                aria-label="Edit"
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-            </Tooltip>
+            <>
+              <CopyTicketPathButton filePath={ticketDetail.file_path} />
+              <Tooltip label="Edit" placement="bottom-end">
+                <button
+                  type="button"
+                  onClick={() => onToggleEdit?.(true)}
+                  className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+                  aria-label="Edit"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              </Tooltip>
+            </>
           }
         />
       </DetailPanel>
@@ -383,6 +418,9 @@ function TicketEditorPanel({
         <span className="font-mono text-sm font-normal tracking-wide text-ink">
           {ticketId}
         </span>
+        <CopyTicketPathButton
+          filePath={ticketDetail?.file_path || selectedTicketFilePath}
+        />
         <Tooltip label="Editing mode" placement="bottom">
           <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-100">
             <Pencil className="h-3 w-3" />

@@ -1,0 +1,17 @@
+---
+title: Copy button next to ticket ID copies full ticket path
+type: task
+status: open
+priority: medium
+release: Gitoza-lite/0-3-2
+---
+
+## Summary
+
+In the ticket detail header (view and edit), a copy button sits next to the ticket ID. Clicking it copies the repo-relative YAML path to the clipboard.
+
+## Details
+
+- Button appears immediately after the mono ticket ID.
+- Copies `file_path` (e.g. `.gitoza-lite/tasks/tickets/Gitoza-lite/GITO-XXXX.yaml`).
+- Brief check-icon feedback for ~2s after a successful copy.

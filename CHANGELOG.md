@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Copy ticket path** — button next to the ticket ID copies the repo-relative YAML path
+
 ## [0.3.1] - 2026-09-21
 
 ### Added
