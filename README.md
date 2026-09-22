@@ -1,5 +1,9 @@
 # Gitoza Lite — Task & Test Management in YAML
 
+[![Install on VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/gitoza.gitoza-yaml-test-cases?label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=gitoza.gitoza-yaml-test-cases)
+
+**Install:** [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=gitoza.gitoza-yaml-test-cases)
+
 Manage **tickets**, **releases**, **wiki pages**, and **test cases** without leaving your repo. Everything is plain YAML under `.gitoza-lite/` — browse and edit it from a structured UI in [VS Code](https://code.visualstudio.com/), then share work with your team through **git and branches** like any other code.
 
 Open a project, click through tickets, edit and save, search, and plan by release:
