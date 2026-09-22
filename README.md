@@ -1,8 +1,26 @@
 # Gitoza Lite — Task & Test Management in YAML
 
-Local-first companion to [Gitoza Desktop](https://gitoza.com): **task and test management in YAML** — **tickets**, **wiki pages**, **releases**, and **YAML test cases** as files in your repo. Browse and edit them from a structured UI inside [VS Code](https://code.visualstudio.com/).
+Manage **tickets**, **releases**, **wiki pages**, and **test cases** without leaving your repo. Everything is plain YAML under `.gitoza-lite/` — browse and edit it from a structured UI in [VS Code](https://code.visualstudio.com/), then share work with your team through **git and branches** like any other code.
 
-Everything lives under `.gitoza-lite/` as files in your repo (git-friendly, AI-friendly).
+Open a project, click through tickets, edit and save, search, and plan by release:
+
+<video src="https://raw.githubusercontent.com/gitoza-io/gitoza-lite/main/media/vscode-demo-hero.mp4" controls></video>
+
+## AI-generated tickets
+
+Ask Cursor, Copilot, or ChatGPT to draft a ticket the same way you’d ask for a code change. The assistant writes a YAML file in the repo; open it in Gitoza Lite to refine status, release, and details — then commit and review in a PR. No built-in AI required.
+
+<video src="https://raw.githubusercontent.com/gitoza-io/gitoza-lite/main/media/ai-generate-task-extension.mp4" controls></video>
+
+- **Draft with AI** — generate a `.yaml` file, then open and refine it in Gitoza Lite before you commit.
+- **Docs and tasks as code** — every entity is a file you can `git add`, `git diff`, and merge in pull requests.
+- **Same file shape everywhere** — YAML front matter + Markdown body; filename stem is the entity id.
+
+## Tests
+
+Browse the Test Repository, create a case, and run a manual Pass / Fail / Skip flow:
+
+<video src="https://raw.githubusercontent.com/gitoza-io/gitoza-yaml-test-cases/main/media/gitoza-vscode-extension.mp4" poster="https://raw.githubusercontent.com/gitoza-io/gitoza-yaml-test-cases/main/media/screenshots/test-repository-ui.png" controls></video>
 
 ## Try the in-repo handbook
 
@@ -16,20 +34,6 @@ This repository ships both **extension source** and a seeded **handbook** under 
    - **Tickets** → project **Gitoza_Lite** → *Welcome — start here* (`LITE-WELCOM`)
    - **Test Repository** → project **gitoza.lite.handbook**
    - **Test Run** → **R-SMOKE1** (Handbook smoke)
-
-## Demo
-
-Browse the Test Repository, create a case, and run a manual Pass / Fail / Skip flow. *(Demo video covers Tests today — ticket/wiki walkthrough coming soon.)*
-
-<video src="https://raw.githubusercontent.com/gitoza-io/gitoza-yaml-test-cases/main/media/gitoza-vscode-extension.mp4" poster="https://raw.githubusercontent.com/gitoza-io/gitoza-yaml-test-cases/main/media/screenshots/test-repository-ui.png" controls></video>
-
-## AI-friendly workflow
-
-Tickets, wiki pages, releases, and test cases are plain YAML in your repo — easy for AI assistants (Cursor, Copilot, ChatGPT, etc.) to read and write. Draft with chat, then refine in the UI. No built-in AI is required.
-
-- **Draft with AI** — generate a `.yaml` file, then open and refine it in Gitoza Lite before you commit.
-- **Docs and tasks as code** — every entity is a file you can `git add`, `git diff`, and merge in pull requests.
-- **Same file shape everywhere** — YAML front matter + Markdown body; filename stem is the entity id.
 
 ## Getting started
 
@@ -143,9 +147,9 @@ Supported `result` values: `pending`, `passed`, `failed`, `skipped`.
 
 ## About Gitoza
 
-Built by [Gitoza](https://gitoza.com) — a local-first, git-based platform for tickets, wiki, and test management as code.
+Built by [Gitoza](https://gitoza.com). Tickets, wiki, releases, and tests stay the same YAML shape whether you edit them in VS Code or elsewhere.
 
-This extension is **Gitoza Lite** for VS Code: edit entities in the editor with a focused subset of Desktop features. For git sync, review workflows, automation pipelines, and the full desktop experience, visit **[gitoza.com](https://gitoza.com)**.
+**Gitoza Lite** is the in-editor workflow for developers. When the whole team needs to work on that same project data — including people who don’t live in git day to day — keep assets local and use **[Gitoza Desktop](https://gitoza.com)** for shared task views, sync, and progress tracking.
 
 ## Development
 
