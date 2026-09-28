@@ -390,9 +390,10 @@ export default function ReleasesPage({
     releaseFilterActive || searchActive || Boolean(ticketQuickFilter);
 
   const visibleProjects = useMemo(() => {
-    const base = releaseFilterActive
-      ? projects.filter((p) => filteredReleasesByProject.has(p.name))
-      : projects;
+    const base =
+      releaseFilterActive && !openedProjectName
+        ? projects.filter((p) => filteredReleasesByProject.has(p.name))
+        : projects;
     const pinned = sortProjectsWithPins(base, pinnedProjectPaths);
     return filterProjectsToOpenedName(pinned, openedProjectName);
   }, [
@@ -763,7 +764,9 @@ export default function ReleasesPage({
             <div className="px-2 py-4 text-center text-sm text-slate-400">
               No ticket projects yet
             </div>
-          ) : listFilterActive && visibleProjects.length === 0 ? (
+          ) : listFilterActive &&
+            visibleProjects.length === 0 &&
+            !openedProjectName ? (
             <div className="px-2 py-4 text-center text-sm text-slate-400">
               No matching releases
             </div>
@@ -1163,7 +1166,9 @@ export default function ReleasesPage({
                                   paddingLeft: `${TREE_ROW_CONTENT_GAP}px`,
                                 }}
                               >
-                                No releases
+                                {listFilterActive
+                                  ? "No matching releases"
+                                  : "No releases"}
                               </div>
                             </div>
                           </li>
