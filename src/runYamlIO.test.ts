@@ -7,7 +7,7 @@ describe("runYamlIO", () => {
 title: Sprint 42 smoke
 ---
 cases:
-  - path: .gitoza-lite/test/cases/demo/case.yaml
+  - path: .gitoza-lite/test/cases/demo/case.md
     result: pending
 `;
     const parsed = parseRunYaml(content);
@@ -15,7 +15,7 @@ cases:
     expect(parsed!.title).toBe("Sprint 42 smoke");
     expect(parsed!.cases).toEqual([
       {
-        path: ".gitoza-lite/test/cases/demo/case.yaml",
+        path: ".gitoza-lite/test/cases/demo/case.md",
         result: "pending",
       },
     ]);
@@ -26,7 +26,7 @@ cases:
 title: Run
 ---
 cases:
-  - path: .gitoza-lite/test/cases/a.yaml
+  - path: .gitoza-lite/test/cases/a.md
     result: unknown
 `;
     const parsed = parseRunYaml(content);
@@ -38,11 +38,11 @@ cases:
       title: "My run",
       cases: [
         {
-          path: ".gitoza-lite/test/cases/p/s.yaml",
+          path: ".gitoza-lite/test/cases/p/s.md",
           result: "passed" as const,
         },
         {
-          path: ".gitoza-lite/test/cases/p/f.yaml",
+          path: ".gitoza-lite/test/cases/p/f.md",
           result: "failed" as const,
         },
       ],

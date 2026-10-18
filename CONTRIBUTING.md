@@ -24,7 +24,7 @@ npm run test:ext
 
 | Path | Purpose |
 |------|---------|
-| `src/` | Extension host (TypeScript) — YAML I/O for cases, runs, tickets, releases, wiki; message bridge |
+| `src/` | Extension host (TypeScript) — Markdown entity I/O (YAML front matter) for cases, runs, tickets, releases, wiki; message bridge |
 | `webview/` | React UI (vendored desktop patterns + VS Code adapter) |
 | `dist/` | Built extension and webview bundle |
 

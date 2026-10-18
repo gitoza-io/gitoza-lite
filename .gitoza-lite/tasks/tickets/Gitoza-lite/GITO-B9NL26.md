@@ -13,5 +13,5 @@ In the ticket detail header (view and edit), a copy button sits next to the tick
 ## Details
 
 - Button appears immediately after the mono ticket ID.
-- Copies `file_path` (e.g. `.gitoza-lite/tasks/tickets/Gitoza-lite/GITO-XXXX.yaml`).
+- Copies `file_path` (e.g. `.gitoza-lite/tasks/tickets/Gitoza-lite/GITO-XXXX.md`).
 - Brief check-icon feedback for ~2s after a successful copy.

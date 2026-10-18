@@ -9,8 +9,8 @@ describe("applyPendingRunResults", () => {
   const detail = {
     run_id: "sprint-1",
     cases: [
-      { file_path: "a.yaml", result: "pending", case_id: "a" },
-      { file_path: "b.yaml", result: "passed", case_id: "b" },
+      { file_path: "a.md", result: "pending", case_id: "a" },
+      { file_path: "b.md", result: "passed", case_id: "b" },
     ],
   };
 
@@ -19,7 +19,7 @@ describe("applyPendingRunResults", () => {
   });
 
   it("applies pending results to matching cases", () => {
-    const pending = new Map([["a.yaml", "failed"]]);
+    const pending = new Map([["a.md", "failed"]]);
     const merged = applyPendingRunResults(detail, pending);
     expect(merged.cases[0].result).toBe("failed");
     expect(merged.cases[0].executed_at).toBeTruthy();
@@ -27,7 +27,7 @@ describe("applyPendingRunResults", () => {
   });
 
   it("returns null when detail is null", () => {
-    expect(applyPendingRunResults(null, new Map([["a.yaml", "passed"]]))).toBeNull();
+    expect(applyPendingRunResults(null, new Map([["a.md", "passed"]]))).toBeNull();
   });
 });
 
@@ -47,8 +47,8 @@ describe("countResultsFromCases", () => {
 
 describe("persistedResultForPath", () => {
   it("returns persisted result for a case path", () => {
-    const detail = { cases: [{ file_path: "x.yaml", result: "skipped" }] };
-    expect(persistedResultForPath(detail, "x.yaml")).toBe("skipped");
-    expect(persistedResultForPath(detail, "missing.yaml")).toBe("pending");
+    const detail = { cases: [{ file_path: "x.md", result: "skipped" }] };
+    expect(persistedResultForPath(detail, "x.md")).toBe("skipped");
+    expect(persistedResultForPath(detail, "missing.md")).toBe("pending");
   });
 });

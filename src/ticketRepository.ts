@@ -7,6 +7,12 @@ import type {
   YamlTicketListItem,
   YamlTicketListResponse,
 } from "./messageTypes";
+import {
+  entityFileName,
+  ENTITY_GLOB,
+  isEntityFileName,
+  PROJECT_META_FILE,
+} from "./entityPaths";
 import { TICKETS_ROOT } from "./messageTypes";
 import {
   assertUnderTicketsRoot,
@@ -79,7 +85,7 @@ export class TicketRepository {
   ): Promise<string> {
     const metaUri = vscode.Uri.joinPath(
       folder.uri,
-      joinRepoPath(projectPath, ".project.yaml"),
+      joinRepoPath(projectPath, PROJECT_META_FILE),
     );
     try {
       const bytes = await vscode.workspace.fs.readFile(metaUri);
@@ -98,7 +104,11 @@ export class TicketRepository {
     }
     let count = 0;
     for (const [name, type] of entries) {
-      if (type === vscode.FileType.File && /\.ya?ml$/i.test(name) && !name.startsWith(".")) {
+      if (
+        type === vscode.FileType.File &&
+        isEntityFileName(name) &&
+        !name.startsWith(".")
+      ) {
         count += 1;
       }
     }
@@ -141,7 +151,7 @@ export class TicketRepository {
       }
     }
     await vscode.workspace.fs.createDirectory(projectUri);
-    const metaUri = vscode.Uri.joinPath(projectUri, ".project.yaml");
+    const metaUri = vscode.Uri.joinPath(projectUri, PROJECT_META_FILE);
     await vscode.workspace.fs.writeFile(
       metaUri,
       Buffer.from(serializeProjectYaml(prefix), "utf8"),
@@ -165,8 +175,8 @@ export class TicketRepository {
     assertUnderTicketsRoot(prefix);
 
     const globPattern = project
-      ? joinRepoPath(prefix, "*.yaml")
-      : joinRepoPath(TICKETS_ROOT, "*/*.yaml");
+      ? joinRepoPath(prefix, ENTITY_GLOB)
+      : joinRepoPath(TICKETS_ROOT, `*/${ENTITY_GLOB}`);
     const pattern = new vscode.RelativePattern(resolved.folder, globPattern);
     const files = await vscode.workspace.findFiles(pattern, undefined, 10000);
 
@@ -230,7 +240,7 @@ export class TicketRepository {
   ): Promise<string> {
     for (let attempt = 0; attempt < 40; attempt++) {
       const id = `${prefix}-${randomTicketSuffix()}`;
-      const fileRel = joinRepoPath(projectPath, `${id}.yaml`);
+      const fileRel = joinRepoPath(projectPath, entityFileName(id));
       const fileUri = vscode.Uri.joinPath(folder.uri, fileRel);
       try {
         await vscode.workspace.fs.stat(fileUri);
@@ -268,7 +278,7 @@ export class TicketRepository {
       projectPath,
       prefix,
     );
-    const fileRel = joinRepoPath(projectPath, `${ticketId}.yaml`);
+    const fileRel = joinRepoPath(projectPath, entityFileName(ticketId));
     const fileUri = vscode.Uri.joinPath(resolved.folder.uri, fileRel);
 
     const detail: YamlTicketDetail = {
@@ -340,7 +350,7 @@ export class TicketRepository {
   async deleteTicket(filePath: string): Promise<{ deleted: string }> {
     const norm = filePath.replace(/\\/g, "/");
     assertUnderTicketsRoot(norm);
-    if (norm.includes("/releases/") || norm.endsWith(".project.yaml")) {
+    if (norm.includes("/releases/") || norm.endsWith(PROJECT_META_FILE)) {
       throw new Error("Not a ticket file");
     }
     const resolved = await resolveTicketsRootUri();

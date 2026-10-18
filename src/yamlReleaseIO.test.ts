@@ -17,7 +17,7 @@ Notes
 `;
     const parsed = parseReleaseYaml(
       content,
-      ".gitoza-lite/tasks/tickets/demo/releases/1.1.0.yaml",
+      ".gitoza-lite/tasks/tickets/demo/releases/1.1.0.md",
     );
     expect(parsed).not.toBeNull();
     expect(parsed!.release_id).toBe("demo/1.1.0");
@@ -35,7 +35,7 @@ name: Beta
 `;
     const parsed = parseReleaseYaml(
       content,
-      ".gitoza-lite/tasks/tickets/acme/releases/beta.yaml",
+      ".gitoza-lite/tasks/tickets/acme/releases/beta.md",
     );
     expect(parsed!.status).toBe("open");
     expect(parsed!.release_id).toBe("acme/beta");
@@ -46,7 +46,7 @@ name: Beta
       release_id: "demo/2.0",
       name: "2.0",
       status: "shipped",
-      file_path: ".gitoza-lite/tasks/tickets/demo/releases/2.0.yaml",
+      file_path: ".gitoza-lite/tasks/tickets/demo/releases/2.0.md",
       body: "Shipped",
       project: "demo",
       stem: "2.0",

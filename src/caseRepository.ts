@@ -7,6 +7,12 @@ import type {
   YamlCaseListItem,
   YamlCaseListResponse,
 } from "./messageTypes";
+import {
+  directoryOfEntityPath,
+  entityFileName,
+  ENTITY_GLOB_RECURSIVE,
+  isEntityFileName,
+} from "./entityPaths";
 import { CASES_ROOT } from "./messageTypes";
 import {
   assertUnderCasesRoot,
@@ -115,7 +121,7 @@ export class CaseRepository {
       for (const [name, type] of entries) {
         if (name === ARCHIVE_SEGMENT) continue;
         const child = vscode.Uri.joinPath(uri, name);
-        if (type === vscode.FileType.File && /\.ya?ml$/i.test(name)) {
+        if (type === vscode.FileType.File && isEntityFileName(name)) {
           count += 1;
         } else if (type === vscode.FileType.Directory) {
           await walk(child);
@@ -142,7 +148,7 @@ export class CaseRepository {
 
     assertUnderCasesRoot(prefix);
 
-    const globPattern = joinRepoPath(prefix, "**/*.{yaml,yml}");
+    const globPattern = joinRepoPath(prefix, ENTITY_GLOB_RECURSIVE);
     const pattern = new vscode.RelativePattern(resolved.folder, globPattern);
     const files = await vscode.workspace.findFiles(
       pattern,
@@ -166,7 +172,7 @@ export class CaseRepository {
         if (!parsed) {
           continue;
         }
-        const directory = rel.replace(/\/[^/]+\.ya?ml$/i, "");
+        const directory = directoryOfEntityPath(rel);
         items.push({
           case_id: parsed.case_id,
           title: parsed.title,
@@ -353,7 +359,7 @@ export class CaseRepository {
     const targetUri = vscode.Uri.joinPath(resolved.folder.uri, targetDir);
     await vscode.workspace.fs.createDirectory(targetUri);
 
-    const fileRel = joinRepoPath(targetDir, `${caseId}.yaml`);
+    const fileRel = joinRepoPath(targetDir, entityFileName(caseId));
     const fileUri = vscode.Uri.joinPath(resolved.folder.uri, fileRel);
 
     try {

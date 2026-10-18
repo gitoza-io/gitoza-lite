@@ -1,3 +1,4 @@
+import { isEntityFilePath } from "./entityPaths";
 import type { RunYamlCase } from "./messageTypes";
 
 export interface RunReferenceMatch {
@@ -22,7 +23,7 @@ export function casePathMatchesDeleteTargets(
     const target = normalizePath(raw).replace(/\/+$/, "");
     if (!target) continue;
     if (norm === target) return true;
-    if (target.endsWith(".yaml") || target.endsWith(".yml")) continue;
+    if (isEntityFilePath(target)) continue;
     const prefix = target.endsWith("/") ? target : `${target}/`;
     if (norm.startsWith(prefix)) return true;
   }

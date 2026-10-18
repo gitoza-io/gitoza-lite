@@ -1,3 +1,6 @@
+/** On-disk extension for tickets, releases, wiki, cases, and runs. */
+export const ENTITY_FILE_EXT = ".md";
+
 /** Active case repository root (relative to repo root). */
 export const CASES_ROOT = ".gitoza-lite/test/cases";
 

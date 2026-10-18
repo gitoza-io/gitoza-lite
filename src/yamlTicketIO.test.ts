@@ -24,7 +24,7 @@ Body here
 `;
     const parsed = parseTicketYaml(
       content,
-      ".gitoza-lite/tasks/tickets/demo/DEMO-A1B2C3.yaml",
+      ".gitoza-lite/tasks/tickets/demo/DEMO-A1B2C3.md",
     );
     expect(parsed).not.toBeNull();
     expect(parsed!.ticket_id).toBe("DEMO-A1B2C3");
@@ -42,7 +42,7 @@ title: Only title
 ---
 
 `;
-    const parsed = parseTicketYaml(content, "X-1.yaml");
+    const parsed = parseTicketYaml(content, "X-1.md");
     expect(parsed!.type).toBe("task");
     expect(parsed!.status).toBe("open");
   });
@@ -59,7 +59,7 @@ title: Only title
       reporter: "carol",
       release: "demo/1.0",
       params: { area: "api" },
-      file_path: ".gitoza-lite/tasks/tickets/demo/DEMO-1.yaml",
+      file_path: ".gitoza-lite/tasks/tickets/demo/DEMO-1.md",
       body: "Hello",
       project: "demo",
     };
@@ -74,10 +74,17 @@ title: Only title
     expect(detailToTicketFrontMatter(detail).type).toBe("story");
   });
 
-  it("derives and serializes project prefix", () => {
+  it("derives and serializes project prefix as front-matter Markdown", () => {
     expect(deriveTicketPrefix("demo")).toBe("DEMO");
     expect(deriveTicketPrefix("my-app")).toBe("MYAP");
-    const yaml = serializeProjectYaml("demo");
-    expect(parseProjectYaml(yaml).ticket_prefix).toBe("DEMO");
+    const md = serializeProjectYaml("demo");
+    expect(md.startsWith("---\n")).toBe(true);
+    expect(md).toContain("ticket_prefix: DEMO");
+    expect(parseProjectYaml(md).ticket_prefix).toBe("DEMO");
+  });
+
+  it("defaults project prefix when front matter is missing", () => {
+    expect(parseProjectYaml("ticket_prefix: DEMO\n").ticket_prefix).toBe("TICK");
+    expect(parseProjectYaml("").ticket_prefix).toBe("TICK");
   });
 });

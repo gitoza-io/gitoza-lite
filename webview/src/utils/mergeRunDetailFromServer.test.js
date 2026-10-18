@@ -12,7 +12,7 @@ describe("mergeSearchCaseIntoRunDetail", () => {
 
   const searchRow = {
     run_id: "run-a",
-    file_path: ".gitoza/test/cases/auth/login/a.yaml",
+    file_path: ".gitoza/test/cases/auth/login/a.md",
     case_id: "TC-1",
     title: "Login",
     result: "failed",
@@ -59,7 +59,7 @@ describe("mergeRunResultsFromBatchResponse", () => {
       run: { passed: 0, failed: 0, skipped: 0, updated_at: "old" },
       cases: [
         {
-          file_path: ".gitoza/test/cases/a/c1.yaml",
+          file_path: ".gitoza/test/cases/a/c1.md",
           case_id: "C1",
           title: "Real Title",
           result: "pending",
@@ -78,7 +78,7 @@ describe("mergeRunResultsFromBatchResponse", () => {
       },
       cases: [
         {
-          file_path: ".gitoza/test/cases/a/c1.yaml",
+          file_path: ".gitoza/test/cases/a/c1.md",
           result: "passed",
           executed_at: "2026-06-09T12:00:00Z",
           executed_by: "Alice",

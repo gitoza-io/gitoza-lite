@@ -8,29 +8,29 @@ import { CASES_ROOT } from "./messageTypes";
 
 const PROJECT = `${CASES_ROOT}/my_project`;
 const SUITE = `${PROJECT}/auth`;
-const CASE = `${SUITE}/login.yaml`;
+const CASE = `${SUITE}/login.md`;
 
 describe("assertDeletableCasePath", () => {
-  it("accepts yaml under cases root", () => {
+  it("accepts markdown under cases root", () => {
     expect(assertDeletableCasePath(CASE)).toBe(CASE);
   });
 
   it("rejects paths outside cases root", () => {
-    expect(() => assertDeletableCasePath("other/login.yaml")).toThrow(/under/);
+    expect(() => assertDeletableCasePath("other/login.md")).toThrow(/under/);
   });
 
-  it("rejects non-yaml files", () => {
-    expect(() => assertDeletableCasePath(`${SUITE}/readme.txt`)).toThrow(/YAML/);
+  it("rejects non-markdown files", () => {
+    expect(() => assertDeletableCasePath(`${SUITE}/readme.txt`)).toThrow(/Markdown/);
   });
 
   it("rejects archive paths", () => {
     expect(() =>
-      assertDeletableCasePath(`${CASES_ROOT}/.archive/p/c.yaml`),
+      assertDeletableCasePath(`${CASES_ROOT}/.archive/p/c.md`),
     ).toThrow(/archived/);
   });
 
   it("rejects path traversal", () => {
-    expect(() => assertDeletableCasePath(`${CASES_ROOT}/../secret.yaml`)).toThrow();
+    expect(() => assertDeletableCasePath(`${CASES_ROOT}/../secret.md`)).toThrow();
   });
 });
 

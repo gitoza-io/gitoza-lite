@@ -17,7 +17,7 @@ status: published
 `;
     const parsed = parseWikiYaml(
       content,
-      ".gitoza-lite/wiki/docs/W-ABC123.yaml",
+      ".gitoza-lite/wiki/docs/W-ABC123.md",
     );
     expect(parsed).not.toBeNull();
     expect(parsed!.page_id).toBe("W-ABC123");
@@ -32,7 +32,7 @@ status: published
 title: Draft page
 ---
 `;
-    const parsed = parseWikiYaml(content, ".gitoza-lite/wiki/W-XYZ.yaml");
+    const parsed = parseWikiYaml(content, ".gitoza-lite/wiki/W-XYZ.md");
     expect(parsed!.status).toBe("draft");
   });
 
@@ -42,7 +42,7 @@ title: Draft page
       title: "Page",
       tags: ["a", "b"],
       status: "outdated",
-      file_path: ".gitoza-lite/wiki/W-TEST01.yaml",
+      file_path: ".gitoza-lite/wiki/W-TEST01.md",
       body: "Body",
       directory: ".gitoza-lite/wiki",
     };

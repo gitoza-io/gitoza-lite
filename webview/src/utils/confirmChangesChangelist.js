@@ -72,8 +72,8 @@ export function buildConfirmChangelistEntries({
       const path = normalizePath(change.path);
       const row = rowByPath.get(path) ?? {
         file_path: path,
-        case_id: path.split("/").pop()?.replace(/\.ya?ml$/i, "") ?? path,
-        title: path.split("/").pop()?.replace(/\.ya?ml$/i, "") ?? path,
+        case_id: path.split("/").pop()?.replace(/\.md$/i, "") ?? path,
+        title: path.split("/").pop()?.replace(/\.md$/i, "") ?? path,
       };
       entries.push({
         kind: "case",

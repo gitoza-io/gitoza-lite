@@ -1,3 +1,4 @@
+import { isEntityFilePath } from "./entityPaths";
 import { CASES_ROOT } from "./messageTypes";
 
 const ARCHIVE_SEGMENT = ".archive";
@@ -23,8 +24,8 @@ export function assertDeletableCasePath(relPath: string): string {
   if (norm.includes("..")) {
     throw new Error("Invalid path");
   }
-  if (!/\.ya?ml$/i.test(norm)) {
-    throw new Error("Case path must be a YAML file");
+  if (!isEntityFilePath(norm)) {
+    throw new Error("Case path must be a Markdown file");
   }
   if (isUnderArchive(norm)) {
     throw new Error("Cannot delete archived cases in this extension");

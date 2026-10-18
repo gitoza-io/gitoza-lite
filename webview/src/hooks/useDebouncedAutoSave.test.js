@@ -53,7 +53,7 @@ describe("useDebouncedAutoSave", () => {
 
     await renderHost({
       enabled: true,
-      entityKey: "a.yaml",
+      entityKey: "a.md",
       draft,
       persisted,
       save,
@@ -82,7 +82,7 @@ describe("useDebouncedAutoSave", () => {
 
     await renderHost({
       enabled: true,
-      entityKey: "a.yaml",
+      entityKey: "a.md",
       draft,
       persisted,
       save,
@@ -108,7 +108,7 @@ describe("useDebouncedAutoSave", () => {
 
     await renderHost({
       enabled: true,
-      entityKey: "a.yaml",
+      entityKey: "a.md",
       draft: draftA,
       persisted: persistedA,
       save: saveA,
@@ -118,7 +118,7 @@ describe("useDebouncedAutoSave", () => {
 
     await renderHost({
       enabled: true,
-      entityKey: "b.yaml",
+      entityKey: "b.md",
       draft: draftB,
       persisted: persistedB,
       save: saveB,
@@ -141,7 +141,7 @@ describe("useDebouncedAutoSave", () => {
 
     await renderHost({
       enabled: false,
-      entityKey: "a.yaml",
+      entityKey: "a.md",
       draft: { title: "edited" },
       persisted: { title: "original" },
       save,
@@ -161,7 +161,7 @@ describe("useDebouncedAutoSave", () => {
 
     await renderHost({
       enabled: true,
-      entityKey: "a.yaml",
+      entityKey: "a.md",
       draft: { title: "  same  " },
       persisted: { title: "same" },
       normalize: (d) => ({ title: (d.title || "").trim() }),

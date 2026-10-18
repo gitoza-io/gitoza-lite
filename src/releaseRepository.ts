@@ -5,6 +5,7 @@ import type {
   YamlReleaseDetail,
   YamlReleaseListItem,
 } from "./messageTypes";
+import { entityFileName, ENTITY_GLOB } from "./entityPaths";
 import { TICKETS_ROOT } from "./messageTypes";
 import {
   assertUnderTicketsRoot,
@@ -31,8 +32,8 @@ export class ReleaseRepository {
 
     const project = options.project?.trim();
     const globPattern = project
-      ? joinRepoPath(TICKETS_ROOT, project, "releases", "*.yaml")
-      : joinRepoPath(TICKETS_ROOT, "*/releases/*.yaml");
+      ? joinRepoPath(TICKETS_ROOT, project, "releases", ENTITY_GLOB)
+      : joinRepoPath(TICKETS_ROOT, `*/releases/${ENTITY_GLOB}`);
     const pattern = new vscode.RelativePattern(resolved.folder, globPattern);
     const files = await vscode.workspace.findFiles(pattern, undefined, 5000);
 
@@ -99,8 +100,7 @@ export class ReleaseRepository {
     const releasesUri = vscode.Uri.joinPath(resolved.folder.uri, releasesDir);
     await vscode.workspace.fs.createDirectory(releasesUri);
 
-    const fileRel = joinRepoPath(releasesDir, `${stem}.yaml`);
-    const fileUri = vscode.Uri.joinPath(resolved.folder.uri, fileRel);
+    const fileRel = joinRepoPath(releasesDir, entityFileName(stem));    const fileUri = vscode.Uri.joinPath(resolved.folder.uri, fileRel);
     try {
       await vscode.workspace.fs.stat(fileUri);
       throw new Error(`Release '${stem}' already exists.`);

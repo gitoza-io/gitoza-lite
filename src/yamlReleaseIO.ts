@@ -1,4 +1,5 @@
 import { parse, stringify } from "yaml";
+import { entityStemFromFileName } from "./entityPaths";
 import type { ReleaseStatus, YamlReleaseDetail } from "./messageTypes";
 
 const RELEASE_STATUSES: ReleaseStatus[] = ["open", "shipped", "cancelled"];
@@ -21,19 +22,15 @@ function parseReleaseStatus(value: unknown): ReleaseStatus {
 }
 
 function stemFromPath(filePath: string): string {
-  return (
-    filePath
-      .replace(/\\/g, "/")
-      .split("/")
-      .pop()
-      ?.replace(/\.ya?ml$/i, "") ?? ""
+  return entityStemFromFileName(
+    filePath.replace(/\\/g, "/").split("/").pop() ?? "",
   );
 }
 
 export function projectFromReleasePath(filePath: string): string | undefined {
   const norm = filePath.replace(/\\/g, "/");
   const parts = norm.split("/");
-  // .gitoza-lite/tasks/tickets/{project}/releases/{stem}.yaml
+  // .gitoza-lite/tasks/tickets/{project}/releases/{stem}.md
   const ticketsIdx = parts.indexOf("tickets");
   if (ticketsIdx >= 0 && parts.length > ticketsIdx + 2) {
     return parts[ticketsIdx + 1];

@@ -5,13 +5,13 @@ const CASES_PREFIX = `${CASES_ROOT}/`;
 
 /**
  * Converts a case file path into breadcrumb segments from the project name onward.
- * E.g. ".gitoza-lite/test/cases/auth/securechange/testnewnew.yaml" -> ["auth", "securechange", "testnewnew"].
+ * E.g. ".gitoza-lite/test/cases/auth/securechange/testnewnew.md" -> ["auth", "securechange", "testnewnew"].
  * @param {string} [filePath]
  * @returns {string[]}
  */
 export function filePath2Breadcrumb(filePath) {
   if (!filePath) return [];
-  const normalized = filePath.replace(/\\/g, "/").replace(/\.ya?ml$/i, "");
+  const normalized = filePath.replace(/\\/g, "/").replace(/\.md$/i, "");
   const withoutPrefix = normalized.startsWith(CASES_PREFIX)
     ? normalized.slice(CASES_PREFIX.length)
     : normalized;

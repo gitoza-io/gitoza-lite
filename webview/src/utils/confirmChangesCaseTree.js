@@ -9,18 +9,18 @@ function normalizeCasePath(filePath) {
   return (filePath || "").replace(/\\/g, "/");
 }
 
-function isCaseYamlPath(filePath) {
-  return /\.ya?ml$/i.test(normalizeCasePath(filePath));
+function isCaseEntityPath(filePath) {
+  return /\.md$/i.test(normalizeCasePath(filePath));
 }
 
 /**
- * Ancestor folder paths for a case YAML (project + suites), shallow to deep.
+ * Ancestor folder paths for a case entity (project + suites), shallow to deep.
  * @param {string} filePath
  * @returns {string[]}
  */
 function ancestorDirectoryPathsForCase(filePath) {
   const norm = normalizeCasePath(filePath);
-  if (!norm.startsWith(CASES_PREFIX) || !isCaseYamlPath(norm)) return [];
+  if (!norm.startsWith(CASES_PREFIX) || !isCaseEntityPath(norm)) return [];
   const dirs = [];
   let dir = norm.slice(0, norm.lastIndexOf("/"));
   while (dir.length > CASES_ROOT.length && dir.startsWith(`${CASES_ROOT}/`)) {
@@ -102,7 +102,7 @@ export function resolveChangedCasesFolderTree(repositoryTree, changedPaths) {
  * @returns {{ title: string, caseId: string }}
  */
 export function caseMetaFromPath(filePath) {
-  const normalized = (filePath || "").replace(/\\/g, "/").replace(/\.ya?ml$/i, "");
+  const normalized = (filePath || "").replace(/\\/g, "/").replace(/\.md$/i, "");
   const withoutPrefix = normalized.startsWith(CASES_PREFIX)
     ? normalized.slice(CASES_PREFIX.length)
     : normalized;

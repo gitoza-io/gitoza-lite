@@ -116,13 +116,13 @@ describe("getConflictKind", () => {
 
 describe("resolver state helpers", () => {
   const contentFile = {
-    file_path: "a.yaml",
+    file_path: "a.md",
     conflict_kind: "content",
     content: LF_CONFLICT,
   };
 
   const deleteFile = {
-    file_path: "b.yaml",
+    file_path: "b.md",
     conflict_kind: "modify_delete",
     shared_deleted: true,
     your_content: "mine",
@@ -130,36 +130,36 @@ describe("resolver state helpers", () => {
   };
 
   const moveDeleteFile = {
-    file_path: "old/b.yaml",
+    file_path: "old/b.md",
     conflict_kind: "modify_delete",
     shared_deleted: true,
-    shared_path: "new/b.yaml",
+    shared_path: "new/b.md",
     content: "",
   };
 
   it("createInitialResolverState defaults modify_delete to keep_mine", () => {
     const state = createInitialResolverState([contentFile, deleteFile]);
-    expect(state["a.yaml"].kind).toBe("content");
-    expect(state["b.yaml"]).toEqual({ kind: "modify_delete", action: "keep_mine" });
+    expect(state["a.md"].kind).toBe("content");
+    expect(state["b.md"]).toEqual({ kind: "modify_delete", action: "keep_mine" });
   });
 
   it("isFileFullyResolved accepts tri-state modify_delete actions", () => {
     const state = createInitialResolverState([deleteFile]);
     expect(isFileFullyResolved(deleteFile, state)).toBe(true);
-    state["b.yaml"].action = "keep_both";
+    state["b.md"].action = "keep_both";
     expect(isFileFullyResolved(deleteFile, state)).toBe(true);
-    state["b.yaml"].action = "keep_theirs";
+    state["b.md"].action = "keep_theirs";
     expect(isFileFullyResolved(deleteFile, state)).toBe(true);
-    state["b.yaml"].action = "bogus";
+    state["b.md"].action = "bogus";
     expect(isFileFullyResolved(deleteFile, state)).toBe(false);
   });
 
   it("buildResolvedPayload emits modify_delete tri-state without content", () => {
     const state = createInitialResolverState([deleteFile]);
-    state["b.yaml"].action = "keep_theirs";
+    state["b.md"].action = "keep_theirs";
     const payload = buildResolvedPayload([deleteFile], state);
     expect(payload[0]).toMatchObject({
-      file_path: "b.yaml",
+      file_path: "b.md",
       conflict_kind: "modify_delete",
       action: "keep_theirs",
       shared_deleted: true,
@@ -172,18 +172,18 @@ describe("resolver state helpers", () => {
     const state = createInitialResolverState([moveDeleteFile]);
     const payload = buildResolvedPayload([moveDeleteFile], state);
     expect(payload[0]).toMatchObject({
-      file_path: "old/b.yaml",
+      file_path: "old/b.md",
       action: "keep_mine",
-      new_path: "new/b.yaml",
+      new_path: "new/b.md",
     });
   });
 
   it("summarizeResolutionChoices detects mixed tri-state choices", () => {
-    const f1 = { ...deleteFile, file_path: "b.yaml" };
-    const f2 = { ...deleteFile, file_path: "c.yaml" };
+    const f1 = { ...deleteFile, file_path: "b.md" };
+    const f2 = { ...deleteFile, file_path: "c.md" };
     const state = createInitialResolverState([f1, f2]);
-    state["b.yaml"].action = "keep_mine";
-    state["c.yaml"].action = "keep_theirs";
+    state["b.md"].action = "keep_mine";
+    state["c.md"].action = "keep_theirs";
     expect(summarizeResolutionChoices([f1, f2], state)).toBe("mixed");
   });
 
@@ -198,19 +198,19 @@ describe("resolver state helpers", () => {
   });
 
   const renameFile = {
-    file_path: "your/case.yaml",
+    file_path: "your/case.md",
     conflict_kind: "rename",
-    your_path: "your/case.yaml",
-    shared_path: "shared/case.yaml",
+    your_path: "your/case.md",
+    shared_path: "shared/case.md",
     your_content: "same body",
     content: "same body",
   };
 
   it("createInitialResolverState defaults rename to your_path", () => {
     const state = createInitialResolverState([renameFile]);
-    expect(state["your/case.yaml"]).toEqual({
+    expect(state["your/case.md"]).toEqual({
       kind: "rename",
-      chosenPath: "your/case.yaml",
+      chosenPath: "your/case.md",
     });
     expect(isFileFullyResolved(renameFile, state)).toBe(true);
     expect(allFilesResolvable([renameFile], state)).toBe(true);
@@ -221,25 +221,25 @@ describe("resolver state helpers", () => {
     const payload = buildResolvedPayload([renameFile], state);
     expect(payload[0]).toMatchObject({
       conflict_kind: "rename",
-      chosen_path: "your/case.yaml",
+      chosen_path: "your/case.md",
       content: "same body",
     });
   });
 
   it("applyRenamePathToAll sets shared path on all rename files", () => {
-    const f2 = { ...renameFile, file_path: "your/b.yaml", your_path: "your/b.yaml", shared_path: "shared/b.yaml" };
+    const f2 = { ...renameFile, file_path: "your/b.md", your_path: "your/b.md", shared_path: "shared/b.md" };
     const state = createInitialResolverState([renameFile, f2]);
     const next = applyRenamePathToAll([renameFile, f2], state, "shared");
-    expect(next["your/case.yaml"].chosenPath).toBe("shared/case.yaml");
-    expect(next["your/b.yaml"].chosenPath).toBe("shared/b.yaml");
+    expect(next["your/case.md"].chosenPath).toBe("shared/case.md");
+    expect(next["your/b.md"].chosenPath).toBe("shared/b.md");
   });
 
   it("applyModifyDeleteActionToAll sets action on all modify_delete files", () => {
-    const f1 = { ...deleteFile, file_path: "b.yaml" };
-    const f2 = { ...deleteFile, file_path: "c.yaml" };
+    const f1 = { ...deleteFile, file_path: "b.md" };
+    const f2 = { ...deleteFile, file_path: "c.md" };
     const state = createInitialResolverState([f1, f2]);
     const next = applyModifyDeleteActionToAll([f1, f2], state, "keep_both");
-    expect(next["b.yaml"].action).toBe("keep_both");
-    expect(next["c.yaml"].action).toBe("keep_both");
+    expect(next["b.md"].action).toBe("keep_both");
+    expect(next["c.md"].action).toBe("keep_both");
   });
 });

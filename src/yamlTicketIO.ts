@@ -1,4 +1,5 @@
 import { parse, stringify } from "yaml";
+import { entityStemFromFileName } from "./entityPaths";
 import type {
   TicketStatus,
   TicketType,
@@ -68,19 +69,15 @@ function parseTicketStatus(value: unknown): TicketStatus {
 }
 
 function stemFromPath(filePath: string): string {
-  return (
-    filePath
-      .replace(/\\/g, "/")
-      .split("/")
-      .pop()
-      ?.replace(/\.ya?ml$/i, "") ?? ""
+  return entityStemFromFileName(
+    filePath.replace(/\\/g, "/").split("/").pop() ?? "",
   );
 }
 
 export function projectFromTicketPath(filePath: string): string | undefined {
   const norm = filePath.replace(/\\/g, "/");
   const parts = norm.split("/");
-  // .gitoza-lite/tasks/tickets/{project}/{id}.yaml
+  // .gitoza-lite/tasks/tickets/{project}/{id}.md
   const ticketsIdx = parts.indexOf("tickets");
   if (ticketsIdx >= 0 && parts.length > ticketsIdx + 2) {
     return parts[ticketsIdx + 1];
@@ -202,9 +199,19 @@ export function serializeTicketYaml(detail: YamlTicketDetail): string {
   return `---\n${yamlHeader}\n---\n\n${body}\n`;
 }
 
+/**
+ * Parse `.project.md` — Markdown with YAML front matter only (matches Desktop).
+ */
 export function parseProjectYaml(content: string): { ticket_prefix: string } {
+  const stripped = content.trimStart();
+  if (!stripped.startsWith("---")) {
+    return { ticket_prefix: "TICK" };
+  }
+  const rest = stripped.slice(3);
+  const end = rest.indexOf("\n---");
+  const frontText = end >= 0 ? rest.slice(0, end) : rest;
   try {
-    const parsed = parse(content) as Record<string, unknown> | null;
+    const parsed = parse(frontText) as Record<string, unknown> | null;
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       const lower = lowerKeyMap(parsed);
       const prefix = String(lower.ticket_prefix ?? "")
@@ -220,8 +227,12 @@ export function parseProjectYaml(content: string): { ticket_prefix: string } {
   return { ticket_prefix: "TICK" };
 }
 
+/** Serialize project meta as front-matter-only Markdown. */
 export function serializeProjectYaml(ticketPrefix: string): string {
-  return stringify({ ticket_prefix: ticketPrefix.trim().toUpperCase() });
+  const yamlHeader = stringify({
+    ticket_prefix: ticketPrefix.trim().toUpperCase(),
+  }).trimEnd();
+  return `---\n${yamlHeader}\n---\n\n`;
 }
 
 export function deriveTicketPrefix(projectName: string): string {

@@ -5,9 +5,9 @@ import { TICKETS_ROOT, WIKI_ROOT } from "./messageTypes";
 describe("pathAsserts", () => {
   it("allows paths under tickets and wiki roots", () => {
     expect(() =>
-      assertUnderRoot(`${TICKETS_ROOT}/demo/DEMO-1.yaml`, TICKETS_ROOT),
+      assertUnderRoot(`${TICKETS_ROOT}/demo/DEMO-1.md`, TICKETS_ROOT),
     ).not.toThrow();
-    expect(() => assertUnderRoot(`${WIKI_ROOT}/W-1.yaml`, WIKI_ROOT)).not.toThrow();
+    expect(() => assertUnderRoot(`${WIKI_ROOT}/W-1.md`, WIKI_ROOT)).not.toThrow();
   });
 
   it("rejects paths outside roots or with ..", () => {

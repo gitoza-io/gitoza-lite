@@ -7,6 +7,11 @@ import type {
   YamlWikiListItem,
   YamlWikiListResponse,
 } from "./messageTypes";
+import {
+  entityFileName,
+  ENTITY_GLOB_RECURSIVE,
+  isEntityFileName,
+} from "./entityPaths";
 import { WIKI_ROOT } from "./messageTypes";
 import {
   assertUnderWikiRoot,
@@ -100,7 +105,7 @@ export class WikiRepository {
       for (const [name, type] of entries) {
         if (name === ARCHIVE_SEGMENT || name.startsWith(".")) continue;
         const child = vscode.Uri.joinPath(uri, name);
-        if (type === vscode.FileType.File && /\.ya?ml$/i.test(name)) {
+        if (type === vscode.FileType.File && isEntityFileName(name)) {
           count += 1;
         } else if (type === vscode.FileType.Directory) {
           await walk(child);
@@ -123,7 +128,7 @@ export class WikiRepository {
       options.directory?.trim().replace(/\\/g, "/") || WIKI_ROOT;
     assertUnderWikiRoot(directory);
 
-    const globPattern = joinRepoPath(directory, "**/*.{yaml,yml}");
+    const globPattern = joinRepoPath(directory, ENTITY_GLOB_RECURSIVE);
     const pattern = new vscode.RelativePattern(resolved.folder, globPattern);
     const files = await vscode.workspace.findFiles(
       pattern,
@@ -206,7 +211,7 @@ export class WikiRepository {
       const id = randomWikiId();
       const pattern = new vscode.RelativePattern(
         folder,
-        joinRepoPath(WIKI_ROOT, `**/${id}.yaml`),
+        joinRepoPath(WIKI_ROOT, `**/${entityFileName(id)}`),
       );
       const hits = await vscode.workspace.findFiles(pattern, undefined, 1);
       if (hits.length === 0) {
@@ -233,7 +238,7 @@ export class WikiRepository {
     );
 
     const pageId = await this.allocatePageId(resolved.folder);
-    const fileRel = joinRepoPath(directory, `${pageId}.yaml`);
+    const fileRel = joinRepoPath(directory, entityFileName(pageId));
     const fileUri = vscode.Uri.joinPath(resolved.folder.uri, fileRel);
 
     const detail: YamlWikiDetail = {

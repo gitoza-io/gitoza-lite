@@ -3,6 +3,18 @@ export const RUNS_ROOT = ".gitoza-lite/test/run";
 export const TICKETS_ROOT = ".gitoza-lite/tasks/tickets";
 export const WIKI_ROOT = ".gitoza-lite/wiki";
 
+export {
+  ENTITY_FILE_EXT,
+  ENTITY_GLOB,
+  ENTITY_GLOB_RECURSIVE,
+  PROJECT_META_FILE,
+  directoryOfEntityPath,
+  entityFileName,
+  entityStemFromFileName,
+  isEntityFileName,
+  isEntityFilePath,
+} from "./entityPaths";
+
 export type RunCaseResult = "pending" | "passed" | "failed" | "skipped";
 
 export interface RunYamlCase {

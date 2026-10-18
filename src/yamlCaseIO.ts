@@ -1,4 +1,5 @@
 import { parse, stringify } from "yaml";
+import { entityStemFromFileName } from "./entityPaths";
 import type { Comment, YamlCaseDetail } from "./messageTypes";
 
 const CASE_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
@@ -107,13 +108,9 @@ export function parseCaseYaml(
   }
 
   const lower = lowerKeyMap(parsed as Record<string, unknown>);
-  const caseId =
-    filePath
-      .replace(/\\/g, "/")
-      .split("/")
-      .pop()
-      ?.replace(/\.yaml$/i, "")
-      ?.replace(/\.yml$/i, "") ?? "";
+  const caseId = entityStemFromFileName(
+    filePath.replace(/\\/g, "/").split("/").pop() ?? "",
+  );
 
   const approveStatus =
     String(lower.approve_status ?? "")

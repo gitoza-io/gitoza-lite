@@ -1,4 +1,8 @@
 import { parse, stringify } from "yaml";
+import {
+  directoryOfEntityPath,
+  entityStemFromFileName,
+} from "./entityPaths";
 import type { WikiStatus, YamlWikiDetail } from "./messageTypes";
 
 const WIKI_STATUSES: WikiStatus[] = ["draft", "published", "outdated"];
@@ -33,12 +37,8 @@ function parseWikiStatus(value: unknown): WikiStatus {
 }
 
 function stemFromPath(filePath: string): string {
-  return (
-    filePath
-      .replace(/\\/g, "/")
-      .split("/")
-      .pop()
-      ?.replace(/\.ya?ml$/i, "") ?? ""
+  return entityStemFromFileName(
+    filePath.replace(/\\/g, "/").split("/").pop() ?? "",
   );
 }
 
@@ -87,7 +87,7 @@ export function parseWikiYaml(
   }
 
   const norm = filePath.replace(/\\/g, "/");
-  const directory = norm.replace(/\/[^/]+\.ya?ml$/i, "");
+  const directory = directoryOfEntityPath(filePath);
 
   return {
     page_id: pageId,

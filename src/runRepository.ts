@@ -6,6 +6,11 @@ import type {
   RunDetail,
   RunListItem,
 } from "./messageTypes";
+import {
+  entityFileName,
+  entityStemFromFileName,
+  isEntityFileName,
+} from "./entityPaths";
 import { RUNS_ROOT } from "./messageTypes";
 import {
   assertUnderCasesRoot,
@@ -32,16 +37,11 @@ function normalizePath(path: string): string {
 }
 
 function caseIdFromPath(filePath: string): string {
-  return (
-    filePath
-      .split("/")
-      .pop()
-      ?.replace(/\.ya?ml$/i, "") ?? ""
-  );
+  return entityStemFromFileName(filePath.split("/").pop() ?? "");
 }
 
 function runFileRel(runId: string): string {
-  return joinRepoPath(RUNS_ROOT, `${runId}.yaml`);
+  return joinRepoPath(RUNS_ROOT, entityFileName(runId));
 }
 
 function countByResult(cases: { result: RunCaseResult }[]): Pick<
@@ -102,10 +102,10 @@ export class RunRepository {
 
     const items: RunListItem[] = [];
     for (const [name, type] of entries) {
-      if (type !== vscode.FileType.File || !/\.ya?ml$/i.test(name)) {
+      if (type !== vscode.FileType.File || !isEntityFileName(name)) {
         continue;
       }
-      const runId = name.replace(/\.ya?ml$/i, "");
+      const runId = entityStemFromFileName(name);
       const fileRel = joinRepoPath(RUNS_ROOT, name);
       try {
         const fileUri = vscode.Uri.joinPath(resolved.folder.uri, fileRel);
@@ -331,10 +331,10 @@ export class RunRepository {
     }> = [];
 
     for (const [name, type] of entries) {
-      if (type !== vscode.FileType.File || !/\.ya?ml$/i.test(name)) {
+      if (type !== vscode.FileType.File || !isEntityFileName(name)) {
         continue;
       }
-      const runId = name.replace(/\.ya?ml$/i, "");
+      const runId = entityStemFromFileName(name);
       const fileRel = joinRepoPath(RUNS_ROOT, name);
       try {
         const fileUri = vscode.Uri.joinPath(resolved.folder.uri, fileRel);
@@ -383,7 +383,7 @@ export class RunRepository {
 
     let updated = 0;
     for (const [name, type] of entries) {
-      if (type !== vscode.FileType.File || !/\.ya?ml$/i.test(name)) {
+      if (type !== vscode.FileType.File || !isEntityFileName(name)) {
         continue;
       }
       const fileRel = joinRepoPath(RUNS_ROOT, name);

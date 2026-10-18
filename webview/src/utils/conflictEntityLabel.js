@@ -33,11 +33,11 @@ export function getConflictEntityKind(filePath) {
 export function pathLeafName(filePath) {
   const normalized = (filePath || "").replace(/\\/g, "/");
   const base = normalized.split("/").pop() || normalized;
-  return base.replace(/\.(ya?ml|md)$/i, "") || filePath;
+  return base.replace(/\.md$/i, "") || filePath;
 }
 
 export function caseMetaFromPath(filePath) {
-  const normalized = (filePath || "").replace(/\\/g, "/").replace(/\.ya?ml$/i, "");
+  const normalized = (filePath || "").replace(/\\/g, "/").replace(/\.md$/i, "");
   const withoutPrefix = normalized.startsWith(CASES_PREFIX)
     ? normalized.slice(CASES_PREFIX.length)
     : normalized;
@@ -47,7 +47,7 @@ export function caseMetaFromPath(filePath) {
 }
 
 export function runDisplayName(filePath) {
-  const normalized = (filePath || "").replace(/\\/g, "/").replace(/\.ya?ml$/i, "");
+  const normalized = (filePath || "").replace(/\\/g, "/").replace(/\.md$/i, "");
   if (normalized.startsWith(RUNS_PREFIX)) {
     const name = normalized.slice(RUNS_PREFIX.length);
     return name.replace(/_/g, " ").replace(/-/g, " ") || filePath;

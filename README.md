@@ -1,10 +1,10 @@
-# Gitoza Lite — Task & Test Management in YAML
+# Gitoza Lite — Task & Test Management in Markdown
 
 [![Install on VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/gitoza.gitoza-yaml-test-cases?label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=gitoza.gitoza-yaml-test-cases)
 
 **Install:** [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=gitoza.gitoza-yaml-test-cases)
 
-Manage **tickets**, **releases**, **wiki pages**, and **test cases** without leaving your repo. Everything is plain YAML under `.gitoza-lite/` — browse and edit it from a structured UI in [VS Code](https://code.visualstudio.com/), then share work with your team through **git and branches** like any other code.
+Manage **tickets**, **releases**, **wiki pages**, and **test cases** without leaving your repo. Everything is Markdown with YAML front matter under `.gitoza-lite/` — browse and edit it from a structured UI in [VS Code](https://code.visualstudio.com/), then share work with your team through **git and branches** like any other code.
 
 Open a project, click through tickets, edit and save, search, and plan by release:
 
@@ -12,11 +12,11 @@ Open a project, click through tickets, edit and save, search, and plan by releas
 
 ## AI-generated tickets
 
-Ask Cursor, Copilot, or ChatGPT to draft a ticket the same way you’d ask for a code change. The assistant writes a YAML file in the repo; open it in Gitoza Lite to refine status, release, and details — then commit and review in a PR. No built-in AI required.
+Ask Cursor, Copilot, or ChatGPT to draft a ticket the same way you’d ask for a code change. The assistant writes a Markdown file in the repo; open it in Gitoza Lite to refine status, release, and details — then commit and review in a PR. No built-in AI required.
 
 <video src="https://raw.githubusercontent.com/gitoza-io/gitoza-lite/main/media/ai-generate-task-extension.mp4" controls></video>
 
-- **Draft with AI** — generate a `.yaml` file, then open and refine it in Gitoza Lite before you commit.
+- **Draft with AI** — generate a `.md` file, then open and refine it in Gitoza Lite before you commit.
 - **Docs and tasks as code** — every entity is a file you can `git add`, `git diff`, and merge in pull requests.
 - **Same file shape everywhere** — YAML front matter + Markdown body; filename stem is the entity id.
 
@@ -62,18 +62,20 @@ This repository ships both **extension source** and a seeded **handbook** under 
 ## Features
 
 - **Tickets** — two-column project tree + detail; create tickets with auto ids (`PREFIX-XXXXXX`); edit metadata + Markdown
-- **Releases** — project-scoped release YAML; link from ticket `release` field
+- **Releases** — project-scoped release Markdown; link from ticket `release` field
 - **Wiki** — two-column folder/page tree + detail; immutable `W-…` page ids; title/tags/status + Markdown
 - **Test Repository** — three-column UI for projects, suites, and cases
-- **Test Run** — YAML-backed manual runs with Pass / Fail / Skip
-- **Local-first** — reads and writes YAML on disk; no SQLite or cloud dependency
+- **Test Run** — Markdown-backed manual runs with Pass / Fail / Skip
+- **Local-first** — reads and writes Markdown on disk; no SQLite or cloud dependency
 - **Manual save** — Edit, then Save (no auto-save)
 
 ## File formats
 
+Entity files are **Markdown with YAML front matter**. Project meta is `.project.md` (front matter only).
+
 ### Ticket
 
-```yaml
+```markdown
 ---
 title: Fix login redirect
 type: bug
@@ -86,11 +88,21 @@ tags: [auth]
 …
 ```
 
-Path: `.gitoza-lite/tasks/tickets/{project}/{PREFIX}-{id}.yaml`. Project meta: `.project.yaml` with `ticket_prefix`.
+Path: `.gitoza-lite/tasks/tickets/{project}/{PREFIX}-{id}.md`.
+
+### Project meta
+
+```markdown
+---
+ticket_prefix: GITO
+---
+```
+
+Path: `.gitoza-lite/tasks/tickets/{project}/.project.md` (front matter only; no Markdown body).
 
 ### Release
 
-```yaml
+```markdown
 ---
 release_id: demo/1.1.0
 name: 1.1.0
@@ -98,11 +110,11 @@ status: open
 ---
 ```
 
-Path: `.gitoza-lite/tasks/tickets/{project}/releases/{stem}.yaml`.
+Path: `.gitoza-lite/tasks/tickets/{project}/releases/{stem}.md`.
 
 ### Wiki page
 
-```yaml
+```markdown
 ---
 title: Architecture overview
 tags: [handbook]
@@ -112,13 +124,13 @@ status: published
 Markdown body…
 ```
 
-Path: `.gitoza-lite/wiki/{folders…}/W-XXXXXX.yaml`.
+Path: `.gitoza-lite/wiki/{folders…}/W-XXXXXX.md`.
 
 ### Case file format
 
-Each test case is a YAML file with front matter and a Markdown body. The extension **writes only editable fields** on create/save (`title`, `priority`, `tags`, `status`, `requirement_id`, `assigned_to`, `automated`, `params`, and the Markdown body).
+Each test case is a Markdown file with YAML front matter and a Markdown body. The extension **writes only editable fields** on create/save (`title`, `priority`, `tags`, `status`, `requirement_id`, `assigned_to`, `automated`, `params`, and the Markdown body).
 
-```yaml
+```markdown
 ---
 title: Login with valid credentials
 priority: high
@@ -136,14 +148,16 @@ User is redirected to the dashboard.
 
 ### Test run file format
 
-```yaml
+Run files use YAML front matter plus a YAML `cases:` list in the body:
+
+```markdown
 ---
 title: Sprint 42 smoke
 ---
 cases:
-  - path: .gitoza-lite/test/cases/my_project/suite/login.yaml
+  - path: .gitoza-lite/test/cases/my_project/suite/login.md
     result: pending
-  - path: .gitoza-lite/test/cases/my_project/suite/logout.yaml
+  - path: .gitoza-lite/test/cases/my_project/suite/logout.md
     result: passed
 ```
 
@@ -151,7 +165,7 @@ Supported `result` values: `pending`, `passed`, `failed`, `skipped`.
 
 ## About Gitoza
 
-Built by [Gitoza](https://gitoza.com). Tickets, wiki, releases, and tests stay the same YAML shape whether you edit them in VS Code or elsewhere.
+Built by [Gitoza](https://gitoza.com). Tickets, wiki, releases, and tests stay the same Markdown-with-front-matter shape whether you edit them in VS Code or elsewhere.
 
 **Gitoza Lite** is the in-editor workflow for developers. When the whole team needs to work on that same project data — including people who don’t live in git day to day — keep assets local and use **[Gitoza Desktop](https://gitoza.com)** for shared task views, sync, and progress tracking.
 

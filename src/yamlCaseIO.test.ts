@@ -19,7 +19,7 @@ priority: medium
 Hello body
 with newlines
 `;
-    const parsed = parseCaseYaml(content, ".gitoza-lite/test/cases/demo/welcome-001.yaml");
+    const parsed = parseCaseYaml(content, ".gitoza-lite/test/cases/demo/welcome-001.md");
     expect(parsed).not.toBeNull();
     expect(parsed!.case_id).toBe("welcome-001");
     expect(parsed!.title).toBe("Welcome to Gitoza");
@@ -36,7 +36,7 @@ title: Only title
 
 Body.
 `;
-    const parsed = parseCaseYaml(content, "case.yaml");
+    const parsed = parseCaseYaml(content, "case.md");
     expect(parsed!.status).toBe("active");
     expect(parsed!.approve_status).toBe("draft");
   });
@@ -46,7 +46,7 @@ Body.
 title: Empty body
 ---
 `;
-    const parsed = parseCaseYaml(content, "case.yaml");
+    const parsed = parseCaseYaml(content, "case.md");
     expect(parsed!.body).toBe("");
     const serialized = serializeCaseYaml(parsed!);
     expect(serialized).toContain("---");
@@ -60,7 +60,7 @@ title: Empty body
       tags: [],
       status: "active",
       priority: "high",
-      file_path: ".gitoza-lite/test/cases/p/TC-1.yaml",
+      file_path: ".gitoza-lite/test/cases/p/TC-1.md",
       body: "Body text",
       approve_status: "draft",
       automated: true,
@@ -81,7 +81,7 @@ title: Empty body
       tags: [],
       status: "active",
       priority: "medium",
-      file_path: "x.yaml",
+      file_path: "x.md",
       body: "",
       approve_status: "draft",
       automated: false,
@@ -98,7 +98,7 @@ title: Tags
 tags: alpha, beta, gamma
 ---
 `;
-    const parsed = parseCaseYaml(content, "t.yaml");
+    const parsed = parseCaseYaml(content, "t.md");
     expect(parsed!.tags).toEqual(["alpha", "beta", "gamma"]);
   });
 
@@ -111,7 +111,7 @@ approve_status: approved
 ---
 Body.
 `;
-    const parsed = parseCaseYaml(content, "legacy.yaml");
+    const parsed = parseCaseYaml(content, "legacy.md");
     expect(parsed!.updated_at).toBe("2024-01-01T00:00:00Z");
     expect(parsed!.updated_by).toBe("alice");
     expect(parsed!.approve_status).toBe("approved");

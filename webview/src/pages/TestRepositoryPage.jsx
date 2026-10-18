@@ -378,7 +378,7 @@ export default function TestRepositoryPage({ hasCasesRoot, onCasesRootInitialize
       const rows = payload.rows ?? (payload.row ? [payload.row] : []);
       const count = paths.length;
       const firstLabel =
-        rows[0]?.title?.trim() || rows[0]?.case_id || paths[0].split("/").pop()?.replace(/\.ya?ml$/i, "");
+        rows[0]?.title?.trim() || rows[0]?.case_id || paths[0].split("/").pop()?.replace(/\.md$/i, "");
 
       let description =
         count === 1

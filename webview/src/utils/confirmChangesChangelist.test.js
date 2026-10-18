@@ -8,7 +8,7 @@ import {
 describe("breadcrumbLabelForCasePath", () => {
   it("formats project suite case breadcrumb", () => {
     expect(
-      breadcrumbLabelForCasePath(".gitoza/test/cases/auth/login/login.yaml"),
+      breadcrumbLabelForCasePath(".gitoza/test/cases/auth/login/login.md"),
     ).toBe("auth › login › login");
   });
 });
@@ -17,14 +17,14 @@ describe("buildConfirmChangelistEntries", () => {
   it("sorts case rows by path and adds section header", () => {
     const entries = buildConfirmChangelistEntries({
       caseChanges: [
-        { path: ".gitoza/test/cases/p/b.yaml", status: "M" },
-        { path: ".gitoza/test/cases/p/a.yaml", status: "A" },
+        { path: ".gitoza/test/cases/p/b.md", status: "M" },
+        { path: ".gitoza/test/cases/p/a.md", status: "A" },
       ],
     });
     expect(entries[0]).toMatchObject({ kind: "sectionHeader", title: "Cases", count: 2 });
     expect(entries[1].kind).toBe("case");
-    expect(entries[1].file_path).toBe(".gitoza/test/cases/p/a.yaml");
-    expect(entries[2].file_path).toBe(".gitoza/test/cases/p/b.yaml");
+    expect(entries[1].file_path).toBe(".gitoza/test/cases/p/a.md");
+    expect(entries[2].file_path).toBe(".gitoza/test/cases/p/b.md");
   });
 
   it("includes runs templates and config sections when present", () => {
@@ -33,7 +33,7 @@ describe("buildConfirmChangelistEntries", () => {
         {
           runDir: ".gitoza/test/runs/sprint_1",
           runId: "sprint_1",
-          paths: [".gitoza/test/runs/sprint_1/head.yaml"],
+          paths: [".gitoza/test/runs/sprint_1/head.md"],
         },
       ],
       templateFiles: [".gitoza/test/templates/t.md"],
@@ -54,18 +54,18 @@ describe("buildConfirmChangelistEntries", () => {
 describe("findFirstSelectableEntry", () => {
   it("prefers first case row", () => {
     const entries = buildConfirmChangelistEntries({
-      caseChanges: [{ path: ".gitoza/test/cases/p/a.yaml", status: "M" }],
+      caseChanges: [{ path: ".gitoza/test/cases/p/a.md", status: "M" }],
       runGroups: [
         {
           runDir: ".gitoza/test/runs/r1",
           runId: "r1",
-          paths: [".gitoza/test/runs/r1/head.yaml"],
+          paths: [".gitoza/test/runs/r1/head.md"],
         },
       ],
     });
     expect(findFirstSelectableEntry(entries)).toEqual({
       selectionKind: "caseFolder",
-      selectedFilePath: ".gitoza/test/cases/p/a.yaml",
+      selectedFilePath: ".gitoza/test/cases/p/a.md",
       selectedRunDir: null,
     });
   });
@@ -76,7 +76,7 @@ describe("findFirstSelectableEntry", () => {
         {
           runDir: ".gitoza/test/runs/r1",
           runId: "r1",
-          paths: [".gitoza/test/runs/r1/head.yaml"],
+          paths: [".gitoza/test/runs/r1/head.md"],
         },
       ],
     });
