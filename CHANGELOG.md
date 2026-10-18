@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-18
+
+### Changed
+
+- Entity files are **Markdown (`.md`) with YAML front matter** — tickets, releases, wiki, test cases, runs, and project meta (`.project.md`); `.yaml` / `.yml` entity files are no longer read or written
+- Marketplace SEO copy (`displayName`, `description`, keywords) and README updated for Markdown with front matter
+- Extension identity remains `gitoza.gitoza-yaml-test-cases`; publisher remains `gitoza`
+
 ## [0.3.2] - 2026-09-22
 
 ### Added

@@ -2,7 +2,7 @@
   "name": "gitoza-yaml-test-cases",
   "displayName": "Gitoza Lite — Task & Test Management in Markdown",
   "description": "Task and test management in Markdown with YAML front matter — tickets, wiki, releases, and test cases in your repo. Local-first, AI-friendly files for VS Code, Cursor, Copilot & ChatGPT.",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "publisher": "gitoza",
   "license": "MIT",
   "icon": "media/128x128.png",
